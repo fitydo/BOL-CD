@@ -52,9 +52,7 @@ def one_sided_binomial_pvalue(k: int, n: int, p0: float) -> float:
             return 0.0 if k <= mean else 1.0
         # P(X <= k) ≈ 0.5 * (1 + erf((k + 0.5 - mean) / sqrt(2*var)))
         z = (k + 0.5 - mean) / (sqrt(var) * (2.0 ** 0.5))
-        from math import erf as _erf
-
-        return max(0.0, min(1.0, 0.5 * (1.0 + _erf(z))))
+        return max(0.0, min(1.0, 0.5 * (1.0 + erf(z))))
 
     # Small n: recurrence from r=0 upward to compute CDF directly
     q = 1.0 - p0
