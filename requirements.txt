@@ -4,5 +4,6 @@ pydantic>=2.7,<3
 httpx>=0.27,<0.28
 PyYAML>=6.0,<7
 pytest>=8,<9
+hypothesis>=6.100,<7
 ruff>=0.4,<1
 build>=1.2,<2
