@@ -25,3 +25,23 @@ def normalize_to_ocsf(event: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
+def normalize_event_to_logical(ev: Dict[str, Any]) -> Dict[str, Any]:
+    """Map common OCSF/ECS fields into a logical schema used by the core."""
+    out: Dict[str, Any] = {}
+    # Timestamps
+    out["ts"] = ev.get("time") or ev.get("@timestamp") or ev.get("timestamp")
+    # Network
+    out["src_ip"] = ev.get("src_endpoint.ip") or ev.get("source.ip")
+    out["dst_ip"] = ev.get("dst_endpoint.ip") or ev.get("destination.ip")
+    # Principal/process
+    out["user"] = ev.get("user.name") or ev.get("user")
+    out["process"] = ev.get("process.name") or ev.get("process")
+    # Action
+    out["action"] = ev.get("activity_id") or ev.get("event.action") or ev.get("action")
+    # Technique
+    out["technique"] = (
+        ev.get("attack.technique_id") or ev.get("threat.technique.id") or ev.get("technique")
+    )
+    return out
+
+

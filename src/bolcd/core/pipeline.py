@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Sequence, Tuple
 
 from .binarization import binarize_events
 from .fdr import bh_qvalues
@@ -77,51 +77,6 @@ def learn_graph_from_events(
     return {"nodes": nodes, "edges": edges}
 
 
-def learn_graph_by_segment(
-    events: Iterable[Dict[str, Any]],
-    thresholds: Dict[str, float],
-    margin_delta: float,
-    fdr_q: float,
-    epsilon: float,
-    segment_by: Sequence[str] | None = None,
-    allowed_values: Mapping[str, Sequence[str]] | None = None,
-) -> Dict[str, Any]:
-    """
-    Group events by the tuple of fields in segment_by and compute a graph per segment.
-    - allowed_values optionally restricts segments to declared values per key; others go to "_other".
-    Returns a dict with { segments: { segment_key: graph }, summary: {segment_key: {nodes, edges}} }.
-    """
-    events_list: List[Dict[str, Any]] = list(events)
-    if not segment_by:
-        g = learn_graph_from_events(events_list, thresholds, margin_delta, fdr_q, epsilon)
-        return {"segments": {"_all": g}, "summary": {"_all": {"nodes": len(g["nodes"]), "edges": len(g["edges"])}}}
-
-    # Partition events
-    segmented: Dict[str, List[Dict[str, Any]]] = {}
-    for ev in events_list:
-        labels: List[str] = []
-        for key in segment_by:
-            raw = ev.get(key)
-            if allowed_values and key in allowed_values:
-                allowed = set(allowed_values[key])
-                label = raw if raw in allowed else "_other"
-            else:
-                label = raw if isinstance(raw, str) else str(raw)
-            labels.append(f"{key}={label}")
-        seg_key = ",".join(labels) if labels else "_all"
-        segmented.setdefault(seg_key, []).append(ev)
-
-    # Learn graph per segment
-    out_segments: Dict[str, Any] = {}
-    summary: Dict[str, Dict[str, int]] = {}
-    for seg_key, seg_events in segmented.items():
-        g = learn_graph_from_events(seg_events, thresholds, margin_delta, fdr_q, epsilon)
-        out_segments[seg_key] = g
-        summary[seg_key] = {"nodes": len(g["nodes"]), "edges": len(g["edges"])}
-
-    return {"segments": out_segments, "summary": summary}
-
-
 def generate_synthetic_events(metric_names: Sequence[str], n: int = 1200) -> List[Dict[str, float]]:
     """
     Generate synthetic events inducing a DAG X->Y->Z with zero counterexamples for
@@ -148,10 +103,44 @@ def generate_synthetic_events(metric_names: Sequence[str], n: int = 1200) -> Lis
     for _ in range(n4):
         events.append({m0: 0.0, m1: 0.0, m2: 0.0})
 
-    # Fill other metrics (if any) with zeros to avoid creating spurious implications
-    if len(metric_names) > 3:
-        for ev in events:
-            for m in metric_names[3:]:
-                ev[m] = 0.0
-
     return events
+
+
+def group_events_by_segments(
+    events: Iterable[Dict[str, Any]], segment_keys: Sequence[str] | None
+) -> Dict[Tuple[Any, ...], List[Dict[str, Any]]]:
+    """Group events by a tuple of segment key values; None/empty means one bucket."""
+    if not segment_keys:
+        return {(): list(events)}
+    out: Dict[Tuple[Any, ...], List[Dict[str, Any]]] = {}
+    for ev in events:
+        key = tuple(ev.get(k) for k in segment_keys)
+        out.setdefault(key, []).append(ev)
+    return out
+
+
+def learn_graphs_by_segments(
+    events: Iterable[Dict[str, Any]],
+    thresholds: Dict[str, float],
+    margin_delta: float,
+    fdr_q: float,
+    epsilon: float,
+    segment_by: Sequence[str] | None,
+) -> Dict[str, Any]:
+    """Return a dict with per-segment graphs and a flattened union for convenience."""
+    buckets = group_events_by_segments(events, segment_by)
+    per_segment: Dict[str, Dict[str, Any]] = {}
+    union_nodes: set[str] = set()
+    union_edges: List[Dict[str, Any]] = []
+
+    for seg_tuple, seg_events in buckets.items():
+        graph = learn_graph_from_events(seg_events, thresholds, margin_delta, fdr_q, epsilon)
+        seg_key = ",".join(str(v) for v in seg_tuple) if seg_tuple else "__all__"
+        # annotate edges with segment label
+        for e in graph["edges"]:
+            e["segment"] = seg_key
+        per_segment[seg_key] = graph
+        union_nodes.update(graph["nodes"])
+        union_edges.extend(graph["edges"])
+
+    return {"segments": per_segment, "union": {"nodes": sorted(union_nodes), "edges": union_edges}}

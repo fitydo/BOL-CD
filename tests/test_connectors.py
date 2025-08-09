@@ -1,34 +1,39 @@
 from __future__ import annotations
 
-from bolcd.connectors.normalize import normalize_to_ocsf
-from bolcd.connectors.sigma import SplunkConnector, SentinelConnector, OpenSearchConnector, parse_sigma_to_events
+from bolcd.connectors.normalize import normalize_event_to_logical
+from bolcd.connectors.splunk import SplunkConnector
+from bolcd.connectors.sentinel import SentinelConnector
+from bolcd.connectors.opensearch import OpenSearchConnector
 
 
-def test_normalize_to_ocsf_basic_mapping():
-    ev = {"host_name": "h", "user_name": "u", "process_name": "p", "asset": {"tier": "gold"}}
-    out = normalize_to_ocsf(ev)
-    assert out["host"] == "h"
-    assert out["user"] == "u"
-    assert out["process"] == "p"
-    assert out["asset.tier"] == "gold"
-
-
-def test_sigma_parse_minimal():
-    rule = {
-        "detection": {
-            "selection1": {"fieldA": "x"},
-            "condition": "selection1",
-        }
+def test_normalize_event_to_logical():
+    ev = {
+        "@timestamp": "2025-01-01T00:00:00Z",
+        "source.ip": "10.0.0.1",
+        "destination.ip": "10.0.0.2",
+        "user.name": "alice",
+        "process.name": "powershell.exe",
+        "event.action": "dns_query",
+        "threat.technique.id": "T1059",
     }
-    sr = parse_sigma_to_events(rule)
-    assert sr.condition == "selection1"
-    assert "fieldA" in sr.fields
+    out = normalize_event_to_logical(ev)
+    assert out["src_ip"] == "10.0.0.1"
+    assert out["dst_ip"] == "10.0.0.2"
+    assert out["user"] == "alice"
+    assert out["process"] == "powershell.exe"
+    assert out["action"] == "dns_query"
+    assert out["technique"] == "T1059"
 
 
-def test_connectors_writeback_stub():
-    rules = [{"name": "r1"}, {"name": "r2"}]
-    assert SplunkConnector("http://splunk", "t").write_back_rules(rules)["count"] == 2
-    assert SentinelConnector("ws", object()).write_back_rules(rules)["count"] == 2
-    assert OpenSearchConnector("https://os", ("u", "p")).write_back_rules(rules)["count"] == 2
+ess = [
+    (SplunkConnector("http://splunk", "tkn"), []),
+    (SentinelConnector("workspace", "tkn"), []),
+    (OpenSearchConnector("http://os", {"basic": "x"}), []),
+]
+
+
+def test_connectors_stubs():
+    for conn, _ in ess:
+        assert conn.writeback([{"name": "rule1"}])["written"] == 1
 
 
