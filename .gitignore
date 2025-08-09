@@ -33,3 +33,9 @@ Thumbs.db
 
 # Project outputs
 graph.json
+
+# Log files
+logs/
+
+
+
