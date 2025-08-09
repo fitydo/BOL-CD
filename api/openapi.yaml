@@ -52,6 +52,8 @@ paths:
                 fdr_q: { type: number, default: 0.01 }
                 epsilon: { type: number, default: 0.005, description: "Rule‑of‑Three 閾" }
                 segment_by: { type: array, items: { type: string }, description: "層別キー（例: asset.tier）" }
+                events_path: { type: string, description: "JSONL ファイルパス（指定時はサンプルではなくこのファイルを入力）" }
+                persist_dir: { type: string, description: "graph.json/graph.graphml を保存する出力ディレクトリ" }
       responses:
         '200':
           description: 実行結果（セグメント指定時は summary を返す）
@@ -94,6 +96,7 @@ paths:
               properties:
                 target: { type: string, enum: [splunk, sentinel, opensearch] }
                 rules: { type: array, items: { type: object } }
+                dry_run: { type: boolean, default: true, description: "true の場合はプレビューのみ（変更なし）" }
       responses:
         '200':
           description: 書き戻し結果
