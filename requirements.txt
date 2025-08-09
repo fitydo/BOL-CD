@@ -7,3 +7,5 @@ pytest>=8,<9
 hypothesis>=6.100,<7
 ruff>=0.4,<1
 build>=1.2,<2
+prometheus-client>=0.20,<1
+python-json-logger>=2.0,<3
