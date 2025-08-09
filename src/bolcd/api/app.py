@@ -14,6 +14,7 @@ from bolcd.core.pipeline import (
 )
 from bolcd.ui.graph_export import to_graphml, write_graph_files
 from bolcd.io.jsonl import read_jsonl
+from bolcd.connectors.factory import make_connector
 
 app = FastAPI(title="ChainLite API (BOL‑CD for SOC)", version="0.1.0")
 
@@ -129,4 +130,6 @@ class WritebackRequest(BaseModel):
 
 @app.post("/api/siem/writeback")
 async def siem_writeback(req: WritebackRequest) -> Dict[str, Any]:
-    return {"status": "ok", "target": req.target, "rules": len(req.rules)}
+    conn = make_connector(req.target)
+    result = conn.writeback(req.rules)
+    return result
