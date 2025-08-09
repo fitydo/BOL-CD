@@ -33,6 +33,8 @@ Thumbs.db
 
 # Project outputs
 graph.json
+bench.json
+reports/
 
 # Log files
 logs/
