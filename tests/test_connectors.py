@@ -25,15 +25,39 @@ def test_normalize_event_to_logical():
     assert out["technique"] == "T1059"
 
 
-ess = [
-    (SplunkConnector("http://splunk", "tkn"), []),
-    (SentinelConnector("workspace", "tkn"), []),
-    (OpenSearchConnector("http://os", {"basic": "x"}), []),
-]
+class FakeResp:
+    def __init__(self, payload):
+        self._payload = payload
+
+    def raise_for_status(self):
+        return None
+
+    def json(self):
+        return self._payload
 
 
-def test_connectors_stubs():
-    for conn, _ in ess:
-        assert conn.writeback([{"name": "rule1"}])["written"] == 1
+class FakeClient:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def post(self, *args, **kwargs):  # noqa: D401 - test stub
+        return FakeResp(self.payload)
+
+
+def test_connectors_ingest_and_writeback_stubs():
+    # Splunk ingest expects list or {results: []}
+    splunk = SplunkConnector("http://splunk", "tkn", client=FakeClient(payload=[{"a": 1}]))
+    assert list(splunk.ingest("index=main")) == [{"a": 1}]
+    assert splunk.writeback([{"name": "r1", "spl": "index=main | head 1"}])["written"] == 1
+
+    # Sentinel flatten tables
+    sentinel_payload = {"tables": [{"columns": [{"name": "a"}], "rows": [[1], [2]]}]}
+    sentinel = SentinelConnector("ws", "tkn", client=FakeClient(payload=sentinel_payload))
+    assert [r["a"] for r in sentinel.ingest("KQL") ] == [1, 2]
+
+    # OpenSearch returns _source list
+    os_payload = {"hits": {"hits": [{"_source": {"x": 1}}, {"_source": {"x": 2}}]}}
+    os_conn = OpenSearchConnector("http://os", {"basic": "abc"}, client=FakeClient(payload=os_payload))
+    assert [r["x"] for r in os_conn.ingest({"query": {"match_all": {}}})] == [1, 2]
 
 
