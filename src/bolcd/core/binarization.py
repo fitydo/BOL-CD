@@ -37,6 +37,7 @@ def binarize_events(
             if x is None:
                 unknowns[m_index] |= bit
                 continue
+            # Per docs/design.md we treat boundary with margin δ as unknown (Kleene logic)
             if x >= a_i + margin_delta:
                 values[m_index] |= bit
             elif x <= a_i - margin_delta:

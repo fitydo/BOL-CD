@@ -51,10 +51,10 @@ paths:
               properties:
                 fdr_q: { type: number, default: 0.01 }
                 epsilon: { type: number, default: 0.005, description: "Rule‑of‑Three 閾" }
-                segment_by: { type: array, items: { type: string } }
+                segment_by: { type: array, items: { type: string }, description: "層別キー（例: asset.tier）" }
       responses:
         '200':
-          description: 実行結果
+          description: 実行結果（セグメント指定時は summary を返す）
   /graph:
     get:
       summary: 最小連鎖グラフを取得

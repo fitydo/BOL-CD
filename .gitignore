@@ -1,0 +1,35 @@
+# Environments
+.venv/
+venv/
+.env/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# IDE/editor
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Windows alternate streams sidecars
+*Zone.Identifier
+*:Zone.Identifier
+
+# Project outputs
+graph.json

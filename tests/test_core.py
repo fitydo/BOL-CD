@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from bolcd.core import binarize_events, compute_all_edges, bh_qvalues, transitive_reduction
+from bolcd.core.implication import rule_of_three_upper
 
 
 def test_binarization_with_margin_and_unknown():
@@ -54,7 +55,7 @@ def test_bh_monotonicity():
     ps = [0.001, 0.01, 0.02, 0.2]
     qs = bh_qvalues(ps)
     assert len(qs) == len(ps)
-    # q-values should be non-decreasing wrt p-values order when sorted
+    # q-values should be non-decreasing wrt p-values when inputs are already sorted
     for i in range(1, len(qs)):
         assert qs[i] >= qs[i - 1]
 
@@ -65,3 +66,8 @@ def test_transitive_reduction_removes_ac_when_ab_bc_present():
     assert ("A", "C") not in set(reduced)
     assert ("A", "B") in set(reduced)
     assert ("B", "C") in set(reduced)
+
+
+def test_rule_of_three_upper():
+    assert rule_of_three_upper(100) == 0.03
+    assert rule_of_three_upper(0) == float("inf")

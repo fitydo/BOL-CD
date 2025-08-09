@@ -32,22 +32,21 @@ def rule_of_three_upper(n_src1: int) -> float:
 
 def one_sided_binomial_pvalue(k: int, n: int, p0: float) -> float:
     """
-    Compute P(K >= k | Bin(n, p0)) for one-sided test. For our use, we set p0 close to 0,
-    but keep function general. Uses survival function approximation.
+    Left-tail one-sided binomial p-value: P(K ≤ k | K ~ Bin(n, p0)).
+    This tests H1: p < p0 (i.e., counterexample rate is smaller than tolerance),
+    which is appropriate for accepting implications when k > 0 but small.
     """
     if n <= 0:
         return 1.0
-    # Use log-sum for numerical stability when small.
-    # For small p0 and moderate n, Poisson approximation works, but we keep exact summation
-    # with early break.
+    # For small p0 and moderate n we keep exact summation with early break.
     from math import comb
 
-    tail = 0.0
-    for r in range(k, n + 1):
-        tail += comb(n, r) * (p0**r) * ((1 - p0) ** (n - r))
-        if tail > 1 - 1e-15:
+    cum = 0.0
+    for r in range(0, k + 1):
+        cum += comb(n, r) * (p0**r) * ((1 - p0) ** (n - r))
+        if cum > 1 - 1e-15:
             return 1.0
-    return min(1.0, max(0.0, tail))
+    return min(1.0, max(0.0, cum))
 
 
 def compute_all_edges(

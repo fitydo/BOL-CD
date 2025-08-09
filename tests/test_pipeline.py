@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from bolcd.core.pipeline import generate_synthetic_events, learn_graph_from_events
+from bolcd.core.pipeline import (
+    generate_synthetic_events,
+    learn_graph_by_segment,
+    learn_graph_from_events,
+)
 
 
 def test_learn_graph_and_tr():
@@ -19,3 +23,28 @@ def test_learn_graph_and_tr():
     assert ("X", "Y") in edges
     assert ("Y", "Z") in edges
     assert ("X", "Z") not in edges
+
+
+def test_learn_graph_by_segment_splits_graphs():
+    events = [
+        {"X": 1.0, "Y": 1.0, "seg": "A"},
+        {"X": 1.0, "Y": 1.0, "seg": "A"},
+        {"X": 0.0, "Y": 0.0, "seg": "A"},
+        {"X": 1.0, "Y": 0.0, "seg": "B"},
+        {"X": 1.0, "Y": 0.0, "seg": "B"},
+        {"X": 0.0, "Y": 1.0, "seg": "B"},
+    ]
+    thresholds = {"X": 0.5, "Y": 0.5}
+    result = learn_graph_by_segment(
+        events=events,
+        thresholds=thresholds,
+        margin_delta=0.0,
+        fdr_q=0.05,
+        epsilon=0.5,
+        segment_by=["seg"],
+    )
+    assert "seg=A" in result["segments"]
+    assert "seg=B" in result["segments"]
+    # Each segment has its own nodes/edges
+    assert isinstance(result["segments"]["seg=A"], dict)
+    assert isinstance(result["segments"]["seg=B"], dict)
