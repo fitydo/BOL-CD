@@ -26,14 +26,25 @@ def test_normalize_event_to_logical():
 
 
 class FakeResp:
-    def __init__(self, payload):
+    def __init__(self, payload, status_code: int = 200):
         self._payload = payload
+        self.status_code = status_code
 
     def raise_for_status(self):
+        if self.status_code >= 400:
+            raise RuntimeError(f"HTTP {self.status_code}")
         return None
 
     def json(self):
         return self._payload
+
+    @property
+    def text(self):
+        import json as _json
+
+        if isinstance(self._payload, (dict, list)):
+            return "\n".join([_json.dumps(self._payload)])
+        return str(self._payload)
 
 
 class FakeClient:
@@ -42,6 +53,13 @@ class FakeClient:
 
     def post(self, *args, **kwargs):  # noqa: D401 - test stub
         return FakeResp(self.payload)
+
+    def get(self, *args, **kwargs):  # noqa: D401 - test stub
+        # simulate 404 for existence check
+        return FakeResp({}, status_code=404)
+
+    def put(self, *args, **kwargs):  # noqa: D401 - test stub
+        return FakeResp({})
 
 
 def test_connectors_ingest_and_writeback_stubs():
