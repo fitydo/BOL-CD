@@ -1,0 +1,4 @@
+# file: \\wsl.localhost\Ubuntu-24.04\home\yoshi\workspace\BOL-CD\src\bolcd\core\implication.py
+# hypothesis_version: 6.137.1
+
+[0.0, 1e-15, 0.5, 1.0, 2.0, 3.0, 2000, 'inf', 'nan']

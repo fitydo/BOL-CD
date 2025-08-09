@@ -1,0 +1,4 @@
+# file: \\wsl.localhost\Ubuntu-24.04\home\yoshi\workspace\BOL-CD\src\bolcd\api\middleware.py
+# hypothesis_version: 6.137.1
+
+[1000.0, 403, ',', ':', 'BOLCD_API_KEYS', 'X-Request-Id', 'admin', 'forbidden', 'http', 'latency_ms', 'method', 'operator', 'path', 'request', 'request_id', 'status', 'viewer']

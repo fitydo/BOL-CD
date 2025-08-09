@@ -1,0 +1,4 @@
+# file: \\wsl.localhost\Ubuntu-24.04\home\yoshi\workspace\BOL-CD\src\bolcd\connectors\factory.py
+# hypothesis_version: 6.137.1
+
+['BOLCD_AZURE_TOKEN', 'BOLCD_SPLUNK_TOKEN', 'BOLCD_SPLUNK_URL', 'basic', 'opensearch', 'sentinel', 'splunk']

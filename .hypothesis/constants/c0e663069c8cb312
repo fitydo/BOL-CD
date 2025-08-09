@@ -1,0 +1,4 @@
+# file: \\wsl.localhost\Ubuntu-24.04\home\yoshi\workspace\BOL-CD\src\bolcd\connectors\opensearch.py
+# hypothesis_version: 6.137.1
+
+[30.0, '/', 'Authorization', '_source', 'basic', 'hits', 'name', 'ok', 'rule missing name', 'skipped', 'status', 'written']

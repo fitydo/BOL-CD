@@ -1,0 +1,4 @@
+# file: \\wsl.localhost\Ubuntu-24.04\home\yoshi\workspace\BOL-CD\src\bolcd\ui\graph_export.py
+# hypothesis_version: 6.137.1
+
+[0.0, 'attr.name', 'attr.type', 'ci95_upper', 'd0', 'd1', 'd2', 'd3', 'data', 'directed', 'double', 'dst', 'edge', 'edges', 'for', 'graph', 'graph.graphml', 'graph.json', 'graphml', 'int', 'json', 'k_counterex', 'key', 'n_src1', 'node', 'nodes', 'q_value', 'src', 'unicode', 'utf-8']

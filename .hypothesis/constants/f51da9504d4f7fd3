@@ -1,0 +1,4 @@
+# file: \\wsl.localhost\Ubuntu-24.04\home\yoshi\workspace\BOL-CD\src\bolcd\cli\bench.py
+# hypothesis_version: 6.137.1
+
+[0.0, 0.005, 0.01, 0.5, 1000.0, 100, 100000, '--d', '--delta', '--epsilon', '--fdr-q', '--n', '--out', '--runs', '__main__', 'edges', 'elapsed_s', 'eps', 'eps_mean', 'eps_p95', 'inf', 'latency_ms_mean', 'latency_ms_p95', 'nodes', 'params', 'reports/bench.json', 'runs', 'utf-8']

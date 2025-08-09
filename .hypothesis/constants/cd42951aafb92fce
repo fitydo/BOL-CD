@@ -1,0 +1,4 @@
+# file: \\wsl.localhost\Ubuntu-24.04\home\yoshi\workspace\BOL-CD\src\bolcd\connectors\normalize.py
+# hypothesis_version: 6.137.1
+
+['@timestamp', 'action', 'activity_id', 'asset', 'attack.technique_id', 'destination.ip', 'dst_endpoint.ip', 'dst_ip', 'event.action', 'host', 'host_name', 'process', 'process.name', 'process_name', 'source.ip', 'src_endpoint.ip', 'src_ip', 'technique', 'threat.technique.id', 'time', 'timestamp', 'ts', 'user', 'user.name', 'user_name']
