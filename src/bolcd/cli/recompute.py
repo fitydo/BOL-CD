@@ -7,16 +7,9 @@ from typing import Any, Dict, Iterable, List
 
 import yaml
 
-from bolcd.core.pipeline import learn_graph_by_segment, learn_graph_from_events
-
-
-def read_jsonl(path: Path) -> Iterable[Dict[str, Any]]:
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            yield json.loads(line)
+from bolcd.core.pipeline import learn_graphs_by_segments
+from bolcd.ui.graph_export import to_graphml
+from bolcd.io.jsonl import read_jsonl
 
 
 def main(argv: List[str] | None = None) -> int:
@@ -26,43 +19,42 @@ def main(argv: List[str] | None = None) -> int:
     p.add_argument("--margin-delta", type=float, default=0.0)
     p.add_argument("--fdr-q", type=float, default=0.01)
     p.add_argument("--epsilon", type=float, default=0.005)
+    p.add_argument("--segments", type=Path, default=Path("configs/segments.yaml"))
     p.add_argument("--out-json", type=Path, default=Path("graph.json"))
-    p.add_argument("--segment-by", nargs="*", default=None, help="Segment keys (space separated)")
+    p.add_argument("--out-graphml", type=Path, default=None)
     args = p.parse_args(argv)
 
     with args.thresholds.open("r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     thresholds: Dict[str, float] = {k: v["threshold"] for k, v in cfg.get("metrics", {}).items()}
 
+    segment_keys: List[str] | None = None
+    if args.segments.exists():
+        with args.segments.open("r", encoding="utf-8") as f:
+            seg_cfg = yaml.safe_load(f)
+        segment_keys = [s.get("key") for s in seg_cfg.get("segments", [])]
+
     events = list(read_jsonl(args.events))
-    if args.segment_by:
-        g = learn_graph_by_segment(
-            events=events,
-            thresholds=thresholds,
-            margin_delta=args.margin_delta,
-            fdr_q=args.fdr_q,
-            epsilon=args.epsilon,
-            segment_by=args.segment_by,
-        )
-    else:
-        g = learn_graph_from_events(
-            events=events,
-            thresholds=thresholds,
-            margin_delta=args.margin_delta,
-            fdr_q=args.fdr_q,
-            epsilon=args.epsilon,
-        )
+    graphs = learn_graphs_by_segments(
+        events=events,
+        thresholds=thresholds,
+        margin_delta=args.margin_delta,
+        fdr_q=args.fdr_q,
+        epsilon=args.epsilon,
+        segment_by=segment_keys,
+    )
 
     with args.out_json.open("w", encoding="utf-8") as f:
-        json.dump(g, f, ensure_ascii=False, indent=2)
+        json.dump(graphs["union"], f, ensure_ascii=False, indent=2)
 
-    if args.segment_by:
-        print(
-            f"Wrote {args.out_json} with {len(g['segments'])} segments; "
-            + ", ".join([f"{k}:{v['nodes']}/{v['edges']}" for k, v in g['summary'].items()])
-        )
-    else:
-        print(f"Wrote {args.out_json} with {len(g['nodes'])} nodes and {len(g['edges'])} edges")
+    if args.out_graphml:
+        args.out_graphml.write_text(to_graphml(graphs["union"]), encoding="utf-8")
+
+    print(
+        f"Wrote {args.out_json} with {len(graphs['union']['nodes'])} nodes and {len(graphs['union']['edges'])} edges"
+    )
+    if args.out_graphml:
+        print(f"Wrote {args.out_graphml} (GraphML)")
     return 0
 
 

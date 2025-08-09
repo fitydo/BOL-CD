@@ -13,6 +13,7 @@ from bolcd.core.pipeline import (
     learn_graphs_by_segments,
 )
 from bolcd.ui.graph_export import to_graphml
+from bolcd.io.jsonl import read_jsonl
 
 app = FastAPI(title="ChainLite API (BOL‑CD for SOC)", version="0.1.0")
 
@@ -33,6 +34,7 @@ class RecomputeRequest(BaseModel):
     fdr_q: float = 0.01
     epsilon: float = 0.005
     segment_by: List[str] | None = None
+    events_path: str | None = None
 
 
 @app.get("/api/health")
@@ -66,7 +68,12 @@ async def recompute(req: RecomputeRequest) -> Dict[str, Any]:
         segment_keys = [s.get("key") for s in seg_cfg.get("segments", [])]
 
     metric_names = list(thresholds.keys()) or ["X", "Y", "Z"]
-    events = generate_synthetic_events(metric_names)
+
+    # choose events source: JSONL file or synthetic demo
+    if req.events_path:
+        events = list(read_jsonl(req.events_path))
+    else:
+        events = generate_synthetic_events(metric_names)
 
     graphs = learn_graphs_by_segments(
         events=events,
