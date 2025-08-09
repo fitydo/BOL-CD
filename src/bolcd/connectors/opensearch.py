@@ -14,19 +14,31 @@ class OpenSearchConnector:
         self.auth = auth
         self.client = client or (httpx and httpx.Client())
 
+    def _headers(self) -> Dict[str, str]:
+        headers: Dict[str, str] = {}
+        if "basic" in self.auth:
+            headers["Authorization"] = f"Basic {self.auth['basic']}"
+        return headers
+
     def ingest(self, dsl: Dict[str, Any]) -> Iterable[Dict[str, Any]]:
         url = f"{self.endpoint}/_search"
         if not self.client:
             return []
-        headers = {}
-        if "basic" in self.auth:
-            headers["Authorization"] = f"Basic {self.auth['basic']}"
-        resp = self.client.post(url, json=dsl, headers=headers)
+        resp = self.client.post(url, json=dsl, headers=self._headers())
         resp.raise_for_status()
         data = resp.json()
         hits = data.get("hits", {}).get("hits", [])
         return [h.get("_source", {}) for h in hits]
 
     def writeback(self, rules: List[Dict[str, Any]]) -> Dict[str, Any]:
-        # Placeholder: Typically create detector findings or index a policy doc
-        return {"status": "skipped", "written": 0}
+        """Index rules into bolcd-rules index (idempotent by name)."""
+        if not self.client:
+            return {"status": "skipped", "written": 0}
+        written = 0
+        for rule in rules:
+            name = rule.get("name", "bolcd_rule")
+            url = f"{self.endpoint}/bolcd-rules/_doc/{name}"
+            r = self.client.put(url, json=rule, headers=self._headers())
+            r.raise_for_status()
+            written += 1
+        return {"status": "ok", "written": written}

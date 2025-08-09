@@ -18,7 +18,10 @@ def make_connector(target: str, env: Mapping[str, str] | None = None, client: An
     if t == "sentinel":
         ws = env.get("BOLCD_SENTINEL_WORKSPACE_ID", "")
         token = env.get("BOLCD_AZURE_TOKEN", "")
-        return SentinelConnector(ws, token, client=client)
+        sub = env.get("BOLCD_AZURE_SUBSCRIPTION_ID")
+        rg = env.get("BOLCD_AZURE_RESOURCE_GROUP")
+        ws_name = env.get("BOLCD_AZURE_WORKSPACE_NAME")
+        return SentinelConnector(ws, token, client=client, subscription_id=sub, resource_group=rg, workspace_name=ws_name)
     if t == "opensearch":
         endpoint = env.get("BOLCD_OPENSEARCH_ENDPOINT", "http://localhost:9200")
         basic = env.get("BOLCD_OPENSEARCH_BASIC", "")
