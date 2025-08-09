@@ -1,0 +1,2 @@
+[console_scripts]
+bolcd-recompute = bolcd.cli.recompute:main

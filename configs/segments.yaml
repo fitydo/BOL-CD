@@ -1,0 +1,7 @@
+# 層別設定 / segments.yaml
+# 例: 資産階層と時間帯で分割学習
+segments:
+  - key: asset.tier
+    values: [gold, silver, bronze]
+  - key: time_of_day
+    values: [work_hours, off_hours]

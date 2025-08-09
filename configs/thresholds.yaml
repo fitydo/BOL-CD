@@ -1,0 +1,14 @@
+# しきい設定 / thresholds.yaml
+# 例: 指標ごとに a_i と margin_delta（δ）を定義
+metrics:
+  ps_exec_count:
+    threshold: 1
+    margin_delta: 0
+  network_beacon_score:
+    threshold: 0.7
+    margin_delta: 0.05
+  cred_dump_alerts:
+    threshold: 1
+    margin_delta: 0
+fdr_q: 0.01
+epsilon: 0.005   # Rule‑of‑Three

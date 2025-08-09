@@ -1,0 +1,25 @@
+{
+  "nodes": [
+    "network_beacon_score",
+    "ps_exec_count",
+    "cred_dump_alerts"
+  ],
+  "edges": [
+    {
+      "src": "network_beacon_score",
+      "dst": "ps_exec_count",
+      "n_src1": 14,
+      "k_counterex": 6,
+      "ci95_upper": NaN,
+      "q_value": 1.333621637716567e-15
+    },
+    {
+      "src": "cred_dump_alerts",
+      "dst": "network_beacon_score",
+      "n_src1": 20,
+      "k_counterex": 6,
+      "ci95_upper": NaN,
+      "q_value": 1.333621637716567e-15
+    }
+  ]
+}

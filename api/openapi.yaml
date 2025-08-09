@@ -1,0 +1,99 @@
+openapi: 3.0.3
+info:
+  title: ChainLite API (BOL‑CD for SOC)
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080/api
+paths:
+  /health:
+    get:
+      summary: Liveness/Readiness
+      responses:
+        '200':
+          description: OK
+  /encode:
+    post:
+      summary: イベントを二値オーソント符号に変換（binarization）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                events:
+                  type: array
+                  items: { type: object }
+                thresholds:
+                  type: object
+                margin_delta:
+                  type: number
+      responses:
+        '200':
+          description: BOL ベクトル（bitstring）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vectors:
+                    type: array
+                    items: { type: string, description: "e.g., 0b010110..." }
+  /edges/recompute:
+    post:
+      summary: 含意推定→FDR→DAG→推移簡約を実行
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fdr_q: { type: number, default: 0.01 }
+                epsilon: { type: number, default: 0.005, description: "Rule‑of‑Three 閾" }
+                segment_by: { type: array, items: { type: string } }
+      responses:
+        '200':
+          description: 実行結果
+  /graph:
+    get:
+      summary: 最小連鎖グラフを取得
+      parameters:
+        - in: query
+          name: format
+          schema: { type: string, enum: [json, graphml], default: json }
+      responses:
+        '200':
+          description: グラフ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nodes: { type: array, items: { type: string } }
+                  edges:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        src: { type: string }
+                        dst: { type: string }
+                        n_src1: { type: integer }
+                        k_counterex: { type: integer }
+                        ci95_upper: { type: number }
+                        q_value: { type: number }
+  /siem/writeback:
+    post:
+      summary: SIEM へ「連鎖化ルール」や抑制設定を書き戻す
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                target: { type: string, enum: [splunk, sentinel, opensearch] }
+                rules: { type: array, items: { type: object } }
+      responses:
+        '200':
+          description: 書き戻し結果
