@@ -14,6 +14,7 @@ dependencies = []
 [project.scripts]
 bolcd-recompute = "bolcd.cli.recompute:main"
 bolcd-bench = "bolcd.cli.bench:main"
+bolcd-writeback = "bolcd.cli.writeback:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

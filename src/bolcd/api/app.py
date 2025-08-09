@@ -126,10 +126,14 @@ async def audit() -> Any:
 class WritebackRequest(BaseModel):
     target: str
     rules: List[Dict[str, Any]]
+    dry_run: bool = True
 
 
 @app.post("/api/siem/writeback")
 async def siem_writeback(req: WritebackRequest) -> Dict[str, Any]:
+    if req.dry_run:
+        example = req.rules[0] if req.rules else {}
+        return {"status": "dry-run", "target": req.target, "rules": len(req.rules), "example": example}
     conn = make_connector(req.target)
     result = conn.writeback(req.rules)
     return result
