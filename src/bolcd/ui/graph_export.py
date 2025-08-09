@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from xml.etree.ElementTree import Element, SubElement, tostring
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 
 def to_graphml(graph: Dict[str, Any]) -> str:
@@ -10,11 +10,31 @@ def to_graphml(graph: Dict[str, Any]) -> str:
     into a minimal GraphML string.
     """
     gml = Element("graphml", xmlns="http://graphml.graphdrawing.org/xmlns")
-    # Keys
-    SubElement(gml, "key", id="d0", for="edge", attr_name="n_src1", attr_type="int")
-    SubElement(gml, "key", id="d1", for="edge", attr_name="k_counterex", attr_type="int")
-    SubElement(gml, "key", id="d2", for="edge", attr_name="ci95_upper", attr_type="double")
-    SubElement(gml, "key", id="d3", for="edge", attr_name="q_value", attr_type="double")
+    # Keys (GraphML requires 'for', 'attr.name', 'attr.type')
+    SubElement(
+        gml,
+        "key",
+        id="d0",
+        attrib={"for": "edge", "attr.name": "n_src1", "attr.type": "int"},
+    )
+    SubElement(
+        gml,
+        "key",
+        id="d1",
+        attrib={"for": "edge", "attr.name": "k_counterex", "attr.type": "int"},
+    )
+    SubElement(
+        gml,
+        "key",
+        id="d2",
+        attrib={"for": "edge", "attr.name": "ci95_upper", "attr.type": "double"},
+    )
+    SubElement(
+        gml,
+        "key",
+        id="d3",
+        attrib={"for": "edge", "attr.name": "q_value", "attr.type": "double"},
+    )
 
     g = SubElement(gml, "graph", edgedefault="directed")
     node_ids: List[str] = list(graph.get("nodes", []))
