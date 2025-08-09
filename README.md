@@ -29,9 +29,6 @@ Implements core algorithms and a FastAPI service per `docs/design.md` and `api/o
   - Splunk: `BOLCD_SPLUNK_URL`, `BOLCD_SPLUNK_TOKEN`
   - Sentinel: `BOLCD_AZURE_TOKEN`, `BOLCD_AZURE_SUBSCRIPTION_ID`, `BOLCD_AZURE_RESOURCE_GROUP`, `BOLCD_AZURE_WORKSPACE_NAME`, `BOLCD_SENTINEL_WORKSPACE_ID`
   - OpenSearch: `BOLCD_OPENSEARCH_ENDPOINT`, `BOLCD_OPENSEARCH_BASIC`
-  ```
-  bolcd-writeback splunk --rules examples/rules.splunk.json --apply
-  ```
 
 ## API
 
@@ -44,9 +41,23 @@ Implements core algorithms and a FastAPI service per `docs/design.md` and `api/o
   ```json
   { "target": "splunk", "rules": [{"name":"BOLCD Test", "spl":"index=main | head 1"}], "dry_run": true }
   ```
+- Metrics: GET `/metrics`
+- RBAC: add `X-API-Key` header after exporting `BOLCD_API_KEYS="key1:viewer,key2:operator,key3:admin"`
 
 ## Benchmark
 
 - `bolcd-bench --d 100 --n 100000 --runs 5 --out reports/bench.json`
+
+## Docker
+
+- Build & run:
+  ```
+  docker build -t bolcd-api:latest .
+  docker run -p 8080:8080 -e BOLCD_API_KEYS="" bolcd-api:latest
+  ```
+- Compose:
+  ```
+  docker-compose up --build
+  ```
 
 Endpoints are under `/api/*` (see `api/openapi.yaml`).
