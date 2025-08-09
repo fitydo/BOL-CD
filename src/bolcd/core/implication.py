@@ -32,21 +32,46 @@ def rule_of_three_upper(n_src1: int) -> float:
 
 def one_sided_binomial_pvalue(k: int, n: int, p0: float) -> float:
     """
-    Left-tail one-sided binomial p-value: P(K ≤ k | K ~ Bin(n, p0)).
-    This tests H1: p < p0 (i.e., counterexample rate is smaller than tolerance),
-    which is appropriate for accepting implications when k > 0 but small.
+    Compute P(K >= k | Bin(n, p0)) one-sided. Uses:
+      - guards for edge cases
+      - normal approximation with continuity correction for large n
+      - stable upward recurrence for small n (avoids huge combs)
     """
     if n <= 0:
         return 1.0
-    # For small p0 and moderate n we keep exact summation with early break.
-    from math import comb
+    if p0 <= 0.0:
+        return 1.0 if k <= 0 else 0.0
+    if p0 >= 1.0:
+        return 1.0 if k <= n else 0.0
 
-    cum = 0.0
-    for r in range(0, k + 1):
-        cum += comb(n, r) * (p0**r) * ((1 - p0) ** (n - r))
-        if cum > 1 - 1e-15:
-            return 1.0
-    return min(1.0, max(0.0, cum))
+    # For large n use normal approximation with continuity correction
+    if n >= 2000:
+        from math import erfc, sqrt
+
+        mean = n * p0
+        var = n * p0 * (1.0 - p0)
+        if var <= 0.0:
+            return 1.0 if k <= mean else 0.0
+        # continuity correction: P(X >= k) ≈ 0.5 * erfc((k - 0.5 - mean) / (sqrt(2*var)))
+        z = (k - 0.5 - mean) / (sqrt(var) * (2.0 ** 0.5))
+        return max(0.0, min(1.0, 0.5 * erfc(z)))
+
+    # Small n: recurrence from r=0 up to k-1 to compute CDF, then 1 - CDF
+    # P(0) = (1-p)^n; P(r+1) = P(r) * (n-r)/(r+1) * p/(1-p)
+    q = 1.0 - p0
+    # Start with potentially tiny value; accumulate in double should be fine for n<2000
+    from math import pow
+
+    p_r = pow(q, n)
+    cdf = p_r if k > 0 else 0.0
+    for r in range(0, k - 1):
+        # Move to r+1
+        p_r *= (n - r) / (r + 1) * (p0 / q)
+        cdf += p_r
+        if cdf >= 1.0 - 1e-15:
+            return 0.0
+    tail = 1.0 - cdf
+    return max(0.0, min(1.0, tail))
 
 
 def compute_all_edges(
