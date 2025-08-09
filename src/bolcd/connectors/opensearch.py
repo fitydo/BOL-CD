@@ -12,7 +12,7 @@ class OpenSearchConnector:
     def __init__(self, endpoint: str, auth: Dict[str, str], client: Optional[Any] = None):
         self.endpoint = endpoint.rstrip("/")
         self.auth = auth
-        self.client = client or (httpx and httpx.Client())
+        self.client = client or (httpx and httpx.Client(timeout=30.0))
 
     def _headers(self) -> Dict[str, str]:
         headers: Dict[str, str] = {}
@@ -30,13 +30,19 @@ class OpenSearchConnector:
         hits = data.get("hits", {}).get("hits", [])
         return [h.get("_source", {}) for h in hits]
 
+    def _validate_rule(self, rule: Dict[str, Any]) -> None:
+        # Minimal validation
+        if not rule.get("name"):
+            raise ValueError("rule missing name")
+
     def writeback(self, rules: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Index rules into bolcd-rules index (idempotent by name)."""
+        """Index rules into bolcd-rules index (idempotent by name). Optionally create detector stub."""
         if not self.client:
             return {"status": "skipped", "written": 0}
         written = 0
         for rule in rules:
-            name = rule.get("name", "bolcd_rule")
+            self._validate_rule(rule)
+            name = rule.get("name")
             url = f"{self.endpoint}/bolcd-rules/_doc/{name}"
             r = self.client.put(url, json=rule, headers=self._headers())
             r.raise_for_status()

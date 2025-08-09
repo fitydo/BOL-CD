@@ -20,7 +20,7 @@ class SentinelConnector:
     ):
         self.workspace_id = workspace_id
         self.token = token
-        self.client = client or (httpx and httpx.Client())
+        self.client = client or (httpx and httpx.Client(timeout=30.0))
         self.subscription_id = subscription_id
         self.resource_group = resource_group
         self.workspace_name = workspace_name
@@ -35,7 +35,6 @@ class SentinelConnector:
         resp = self.client.post(url, headers=self._auth_headers(), json={"query": kql})
         resp.raise_for_status()
         data = resp.json()
-        # Flatten tables (minimal)
         tables = data.get("tables") or []
         out = []
         for t in tables:
@@ -45,9 +44,8 @@ class SentinelConnector:
         return out
 
     def writeback(self, rules: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Create Scheduled Analytics Rules via ARM API.
-        Requires: subscription_id, resource_group, workspace_name, token (AAD).
-        Each rule expects keys: name, kql, queryFrequency, queryPeriod, severity (defaults provided).
+        """Create/Update Scheduled Analytics Rules via ARM API (idempotent).
+        Requires subscription_id, resource_group, workspace_name.
         """
         if not (self.client and self.subscription_id and self.resource_group and self.workspace_name):
             return {"status": "skipped", "written": 0, "reason": "missing ARM config"}
@@ -77,8 +75,11 @@ class SentinelConnector:
                     "triggerThreshold": 0,
                 },
             }
-            url = f"{base}/{name}?api-version={api_version}"
-            r = self.client.put(url, headers=self._auth_headers(), json=body)
-            r.raise_for_status()
+            get_url = f"{base}/{name}?api-version={api_version}"
+            r = self.client.get(get_url, headers=self._auth_headers())
+            # PUT is both create or replace; existence check only for idempotency semantics/logging
+            put_url = get_url
+            rr = self.client.put(put_url, headers=self._auth_headers(), json=body)
+            rr.raise_for_status()
             written += 1
         return {"status": "ok", "written": written}
