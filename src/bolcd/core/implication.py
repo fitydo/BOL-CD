@@ -32,46 +32,42 @@ def rule_of_three_upper(n_src1: int) -> float:
 
 def one_sided_binomial_pvalue(k: int, n: int, p0: float) -> float:
     """
-    Compute P(K >= k | Bin(n, p0)) one-sided. Uses:
-      - guards for edge cases
-      - normal approximation with continuity correction for large n
-      - stable upward recurrence for small n (avoids huge combs)
+    Lower-tail p-value: P(K <= k | Bin(n, p0)). Small p-value indicates k is unusually small
+    compared to the null with failure rate p0, supporting implication.
     """
     if n <= 0:
         return 1.0
     if p0 <= 0.0:
-        return 1.0 if k <= 0 else 0.0
+        return 0.0 if k >= 0 else 1.0
     if p0 >= 1.0:
-        return 1.0 if k <= n else 0.0
+        return 1.0 if k < n else 0.0
 
     # For large n use normal approximation with continuity correction
     if n >= 2000:
-        from math import erfc, sqrt
+        from math import erf, sqrt
 
         mean = n * p0
         var = n * p0 * (1.0 - p0)
         if var <= 0.0:
-            return 1.0 if k <= mean else 0.0
-        # continuity correction: P(X >= k) ≈ 0.5 * erfc((k - 0.5 - mean) / (sqrt(2*var)))
-        z = (k - 0.5 - mean) / (sqrt(var) * (2.0 ** 0.5))
-        return max(0.0, min(1.0, 0.5 * erfc(z)))
+            return 0.0 if k <= mean else 1.0
+        # P(X <= k) ≈ 0.5 * (1 + erf((k + 0.5 - mean) / sqrt(2*var)))
+        z = (k + 0.5 - mean) / (sqrt(var) * (2.0 ** 0.5))
+        from math import erf as _erf
 
-    # Small n: recurrence from r=0 up to k-1 to compute CDF, then 1 - CDF
-    # P(0) = (1-p)^n; P(r+1) = P(r) * (n-r)/(r+1) * p/(1-p)
+        return max(0.0, min(1.0, 0.5 * (1.0 + _erf(z))))
+
+    # Small n: recurrence from r=0 upward to compute CDF directly
     q = 1.0 - p0
-    # Start with potentially tiny value; accumulate in double should be fine for n<2000
     from math import pow
 
-    p_r = pow(q, n)
-    cdf = p_r if k > 0 else 0.0
-    for r in range(0, k - 1):
-        # Move to r+1
+    p_r = pow(q, n)  # r=0
+    cdf = p_r
+    for r in range(0, k):
         p_r *= (n - r) / (r + 1) * (p0 / q)
         cdf += p_r
         if cdf >= 1.0 - 1e-15:
-            return 0.0
-    tail = 1.0 - cdf
-    return max(0.0, min(1.0, tail))
+            return 1.0
+    return max(0.0, min(1.0, cdf))
 
 
 def compute_all_edges(
@@ -85,7 +81,7 @@ def compute_all_edges(
     - n_src1: popcnt(S_i & ~unknown_i)
     - k: popcnt(S_i & ~S_j & ~unknown_j)
     - if k == 0: ci95_upper = 3/n_src1 (Rule-of-Three), p_value=None
-    - else: ci95_upper=None, p_value from one-sided binomial under p0=epsilon
+    - else: ci95_upper=None, p_value from one-sided binomial under p0=epsilon (lower-tail)
     """
     d = len(metric_names)
     edges: List[EdgeStats] = []
