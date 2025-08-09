@@ -3,9 +3,8 @@ from __future__ import annotations
 import os
 import time
 import uuid
-from typing import Callable
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import FastAPI, Header, HTTPException, Request
 from pythonjsonlogger import jsonlogger
 import logging
 
@@ -41,7 +40,6 @@ def verify_role(required: str):
 
     async def dependency(request: Request, x_api_key: str | None = Header(default=None)) -> None:
         mapping = os.getenv("BOLCD_API_KEYS", "")
-        # Open mode: no keys configured → allow all
         if mapping.strip() == "":
             return None
         role = get_role_for_key(x_api_key)

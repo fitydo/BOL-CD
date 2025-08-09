@@ -76,7 +76,6 @@ class SentinelConnector:
                 },
             }
             get_url = f"{base}/{name}?api-version={api_version}"
-            r = self.client.get(get_url, headers=self._auth_headers())
             # PUT is both create or replace; existence check only for idempotency semantics/logging
             put_url = get_url
             rr = self.client.put(put_url, headers=self._auth_headers(), json=body)
