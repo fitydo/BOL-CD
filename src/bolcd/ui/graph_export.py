@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from xml.etree.ElementTree import Element, SubElement, tostring
 from typing import Any, Dict, List
 
@@ -50,5 +52,14 @@ def to_graphml(graph: Dict[str, Any]) -> str:
         SubElement(edge_el, "data", key="d3").text = "" if qv is None else str(qv)
 
     return tostring(gml, encoding="unicode")
+
+
+def write_graph_files(graph: Dict[str, Any], out_dir: Path) -> Dict[str, Path]:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    json_path = out_dir / "graph.json"
+    graphml_path = out_dir / "graph.graphml"
+    json_path.write_text(json.dumps(graph, ensure_ascii=False, indent=2), encoding="utf-8")
+    graphml_path.write_text(to_graphml(graph), encoding="utf-8")
+    return {"json": json_path, "graphml": graphml_path}
 
 

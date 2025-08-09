@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -11,7 +12,7 @@ from bolcd.core.pipeline import (
     generate_synthetic_events,
     learn_graphs_by_segments,
 )
-from bolcd.ui.graph_export import to_graphml
+from bolcd.ui.graph_export import to_graphml, write_graph_files
 from bolcd.io.jsonl import read_jsonl
 
 app = FastAPI(title="ChainLite API (BOL‑CD for SOC)", version="0.1.0")
@@ -34,6 +35,7 @@ class RecomputeRequest(BaseModel):
     epsilon: float = 0.005
     segment_by: List[str] | None = None
     events_path: str | None = None
+    persist_dir: str | None = None
 
 
 @app.get("/api/health")
@@ -83,8 +85,27 @@ async def recompute(req: RecomputeRequest) -> Dict[str, Any]:
         segment_by=segment_keys,
     )
     app.state.last_graphs = graphs
+
     union = graphs["union"]
-    return {"status": "ok", "edges": len(union["edges"]), "nodes": len(union["nodes"]) }
+
+    outputs: Dict[str, str] = {}
+    if req.persist_dir:
+        paths = write_graph_files(union, Path(req.persist_dir))
+        outputs = {k: str(v) for k, v in paths.items()}
+
+    # Audit (in memory)
+    audit = getattr(app.state, "audit", [])
+    audit.append(
+        {
+            "ts": datetime.utcnow().isoformat() + "Z",
+            "edges": len(union["edges"]),
+            "nodes": len(union["nodes"]),
+            "persist": outputs,
+        }
+    )
+    app.state.audit = audit[-100:]
+
+    return {"status": "ok", "edges": len(union["edges"]), "nodes": len(union["nodes"]), "outputs": outputs}
 
 
 @app.get("/api/graph")
@@ -94,6 +115,11 @@ async def graph(format: str = "json") -> Any:
     if format == "graphml":
         return to_graphml(g)
     return g
+
+
+@app.get("/api/audit")
+async def audit() -> Any:
+    return getattr(app.state, "audit", [])
 
 
 class WritebackRequest(BaseModel):
