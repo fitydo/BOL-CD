@@ -9,7 +9,6 @@ from pydantic import BaseModel
 
 from bolcd.core.pipeline import (
     generate_synthetic_events,
-    learn_graph_from_events,
     learn_graphs_by_segments,
 )
 from bolcd.ui.graph_export import to_graphml
