@@ -1,0 +1,4 @@
+[
+  {"name": "BOLCD Test Rule 1", "spl": "index=main | head 1"},
+  {"name": "BOLCD Test Rule 2", "spl": "index=_internal sourcetype=splunkd | head 1"}
+]

@@ -1,0 +1,3 @@
+[
+  {"name": "bolcd_rule_1", "query": {"match_all": {}}, "action": "index-policy"}
+]

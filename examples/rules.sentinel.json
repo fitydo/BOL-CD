@@ -1,0 +1,9 @@
+[
+  {
+    "name": "BOLCD Test Rule 1",
+    "kql": "SecurityEvent | take 1",
+    "queryFrequency": "PT5M",
+    "queryPeriod": "PT5M",
+    "severity": "Medium"
+  }
+]
