@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, List
 
 
 def build_suppression_rules(graph: Dict[str, Any]) -> List[Dict[str, Any]]:

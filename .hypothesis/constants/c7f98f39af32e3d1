@@ -1,0 +1,4 @@
+# file: \\wsl.localhost\Ubuntu-24.04\home\yoshi\workspace\BOL-CD\src\bolcd\rules\generate.py
+# hypothesis_version: 6.137.1
+
+['__all__', 'detector', 'dst', 'edges', 'kql', 'name', 'rule', 'segment', 'spl', 'src', 'suppress', 'via']

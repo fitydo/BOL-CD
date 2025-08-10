@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 import subprocess
 import shlex
-import sys as _sys
 
 
 def load_json(path: Path) -> dict:
