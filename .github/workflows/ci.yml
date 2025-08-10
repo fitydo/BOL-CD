@@ -20,6 +20,9 @@ jobs:
         run: ruff check .
       - name: Package
         run: python -m build || true
+      - name: Acceptance gate (artifacts if present)
+        run: |
+          python scripts/acceptance_check.py
   perf-guard:
     runs-on: ubuntu-latest
     needs: build-and-test
