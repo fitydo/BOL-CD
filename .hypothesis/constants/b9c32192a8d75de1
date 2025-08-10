@@ -1,0 +1,4 @@
+# file: \\wsl.localhost\Ubuntu-24.04\home\yoshi\workspace\BOL-CD\src\bolcd\connectors\splunk.py
+# hypothesis_version: 6.137.1
+
+[30.0, 200, '/', 'Authorization', 'bolcd_rule', 'index=main | head 1', 'json', 'name', 'next_offset', 'offset', 'ok', 'output_mode', 'query', 'result', 'results', 'search', 'skipped', 'spl', 'status', 'written']
