@@ -29,6 +29,7 @@ def test_recompute_and_graph(client: TestClient, tmp_path):
     sample.write_text("{\"ps_exec_count\":2, \"network_beacon_score\":0.9}\n", encoding="utf-8")
     r = client.post(
         "/api/edges/recompute",
+        headers={"X-API-Key": "testop"},
         json={"events_path": str(sample), "epsilon": 0.02, "fdr_q": 0.01, "persist_dir": str(tmp_path)},
     )
     assert r.status_code == 200
@@ -42,6 +43,7 @@ def test_recompute_and_graph(client: TestClient, tmp_path):
 def test_writeback_dry_run(client: TestClient):
     r = client.post(
         "/api/siem/writeback",
+        headers={"X-API-Key": "testop"},
         json={"target": "splunk", "rules": [{"name": "r1", "spl": "index=main | head 1"}]},
     )
     assert r.status_code == 200 and r.json()["status"] in ("dry-run", "ok")

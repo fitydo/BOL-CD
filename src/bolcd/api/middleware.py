@@ -40,8 +40,9 @@ def verify_role(required: str):
 
     async def dependency(request: Request, x_api_key: str | None = Header(default=None)) -> None:
         mapping = os.getenv("BOLCD_API_KEYS", "")
+        # Default-deny when role is required and no key map configured
         if mapping.strip() == "":
-            return None
+            raise HTTPException(status_code=403, detail="forbidden")
         role = get_role_for_key(x_api_key)
         if role is None or order[role] < order[required]:
             raise HTTPException(status_code=403, detail="forbidden")

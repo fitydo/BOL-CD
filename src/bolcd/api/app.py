@@ -16,12 +16,15 @@ from bolcd.core.pipeline import (
 from bolcd.ui.graph_export import to_graphml, write_graph_files
 from bolcd.io.jsonl import read_jsonl
 from bolcd.connectors.factory import make_connector
+from bolcd.audit.store import JSONLAuditStore
 from .middleware import install_middlewares, verify_role
 
 app = FastAPI(title="ChainLite API (BOL‑CD for SOC)", version="0.1.0")
 install_middlewares(app)
 
 CONFIG_DIR = Path(__file__).resolve().parents[3] / "configs"
+AUDIT_PATH = Path(__file__).resolve().parents[3] / "logs" / "audit.jsonl"
+AUDIT_STORE = JSONLAuditStore(AUDIT_PATH)
 
 # Metrics
 REGISTRY = CollectorRegistry()
@@ -110,17 +113,12 @@ async def recompute(req: RecomputeRequest, request: Request, _: None = Depends(v
 
     LAST_RECOMPUTE_EDGES.set(len(union["edges"]))
 
-    audit = getattr(app.state, "audit", [])
-    audit.append(
-        {
-            "ts": datetime.now(UTC).isoformat(),
-            "action": "recompute",
-            "edges": len(union["edges"]),
-            "nodes": len(union["nodes"]),
-            "persist": outputs,
-        }
+    actor = request.headers.get("X-API-Key", "anonymous")
+    AUDIT_STORE.append(
+        actor=actor,
+        action="recompute",
+        diff={"edges": len(union["edges"]), "nodes": len(union["nodes"]), "persist": outputs},
     )
-    app.state.audit = audit[-100:]
 
     return {"status": "ok", "edges": len(union["edges"]), "nodes": len(union["nodes"]), "outputs": outputs}
 
@@ -138,7 +136,7 @@ async def graph(format: str = "json") -> Any:
 @app.get("/api/audit")
 async def audit(_: None = Depends(verify_role("viewer"))) -> Any:
     REQ_COUNT.labels(path="/api/audit").inc()
-    return getattr(app.state, "audit", [])
+    return AUDIT_STORE.tail(100)
 
 
 class WritebackRequest(BaseModel):
