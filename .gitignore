@@ -35,6 +35,9 @@ Thumbs.db
 graph.json
 bench.json
 reports/
+graphs/
+data/**/*.jsonl
+data/synth/
 
 # Log files
 logs/
