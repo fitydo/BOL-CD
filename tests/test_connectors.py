@@ -79,3 +79,24 @@ def test_connectors_ingest_and_writeback_stubs():
     assert [r["x"] for r in os_conn.ingest({"query": {"match_all": {}}})] == [1, 2]
 
 
+
+from bolcd.connectors.sigma import load_sigma_yaml, parse_sigma_to_events
+
+
+def test_sigma_parse(tmp_path):
+    y = tmp_path / "r.yml"
+    y.write_text(
+        """
+title: Example
+detection:
+  sel:
+    ps_exec_count: 1
+  condition: sel
+timeframe: 5m
+        """,
+        encoding="utf-8",
+    )
+    data = load_sigma_yaml(str(y))
+    sr = parse_sigma_to_events(data)
+    assert "ps_exec_count" in sr.fields
+    assert sr.condition == "sel"

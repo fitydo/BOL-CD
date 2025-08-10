@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, List
+import yaml
 
 
 @dataclass
@@ -29,6 +30,13 @@ def parse_sigma_to_events(rule: Dict[str, Any]) -> SigmaRule:
         fields = sorted(set(rule.get("fields", [])))
     timeframe = rule.get("timeframe") or detection.get("timeframe")
     return SigmaRule(condition=condition, fields=sorted(set(fields)), timeframe=timeframe)
+
+
+def load_sigma_yaml(path: str) -> Dict[str, Any]:
+    data = yaml.safe_load(open(path, "r", encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError("Sigma YAML must be a mapping")
+    return data
 
 
 # Placeholder connectors; real implementations require vendor SDKs and auth.

@@ -1,0 +1,4 @@
+# file: \\wsl.localhost\Ubuntu-24.04\home\yoshi\workspace\BOL-CD\src\bolcd\connectors\sigma.py
+# hypothesis_version: 6.137.1
+
+['/', 'condition', 'count', 'detection', 'fields', 'ok', 'r', 'status', 'timeframe', 'utf-8']
