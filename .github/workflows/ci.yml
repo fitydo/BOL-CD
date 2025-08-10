@@ -23,6 +23,15 @@ jobs:
   perf-guard:
     runs-on: ubuntu-latest
     needs: build-and-test
+    env:
+      PERF_D: '100'
+      PERF_N: '200000'
+      PERF_RUNS: '3'
+      PERF_EPS_FLOOR: '10000'
+      PERF_P95_CEIL_MS: '500'
+      PERF_REG_EPS_DROP: '0.10'
+      PERF_REG_P95_RISE: '0.15'
+      PERF_BASELINE_PATH: 'configs/perf-baseline.json'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -32,16 +41,56 @@ jobs:
         run: pip install -r requirements.txt
       - name: Build package (editable)
         run: pip install -e .
-      - name: Run micro-bench
+      - name: Warmup bench
         run: |
-          bolcd-bench --d 50 --n 20000 --runs 3 --out bench.json
+          bolcd-bench --d $PERF_D --n $PERF_N --runs 1 --out bench-warmup.json
+      - name: Run perf bench
+        run: |
+          bolcd-bench --d $PERF_D --n $PERF_N --runs $PERF_RUNS --out bench.json
+      - name: Check performance floors & regression
+        run: |
           python - << 'PY'
-          import json, sys
-          r = json.load(open('bench.json','r',encoding='utf-8'))
-          eps = r['eps_mean']
-          p95 = r['latency_ms_p95']
-          print('EPS mean=', eps, ' p95 latency ms=', p95)
-          # Set wide thresholds to avoid flakiness in CI containers
-          assert eps > 10000, f"EPS too low: {eps}"
-          assert p95 < 500.0, f"Latency p95 too high: {p95}"
+          import json, os, sys
+          from pathlib import Path
+
+          bench = json.load(open('bench.json','r',encoding='utf-8'))
+          eps = float(bench['eps_mean'])
+          p95 = float(bench['latency_ms_p95'])
+          params = bench.get('params', {})
+
+          eps_floor = float(os.environ.get('PERF_EPS_FLOOR', '10000'))
+          p95_ceil = float(os.environ.get('PERF_P95_CEIL_MS', '500'))
+          reg_eps_drop = float(os.environ.get('PERF_REG_EPS_DROP', '0.10'))
+          reg_p95_rise = float(os.environ.get('PERF_REG_P95_RISE', '0.15'))
+          baseline_path = Path(os.environ.get('PERF_BASELINE_PATH', 'configs/perf-baseline.json'))
+
+          print(f"Measured: EPS_mean={eps:.1f}, p95_ms={p95:.1f}, params={params}")
+
+          # Floors
+          if eps < eps_floor:
+            raise SystemExit(f"FAIL: EPS floor {eps_floor} not met (got {eps:.1f})")
+          if p95 > p95_ceil:
+            raise SystemExit(f"FAIL: p95 ceil {p95_ceil}ms exceeded (got {p95:.1f}ms)")
+
+          # Regression vs baseline if present and params comparable
+          if baseline_path.exists():
+            base = json.load(open(baseline_path, 'r', encoding='utf-8'))
+            b_eps = float(base.get('eps_mean', 0.0))
+            b_p95 = float(base.get('latency_ms_p95', 1e9))
+            b_params = base.get('params', {})
+            comparable = (b_params.get('d') == params.get('d')) and (b_params.get('n') == params.get('n'))
+            if comparable:
+              min_eps = b_eps * (1.0 - reg_eps_drop)
+              max_p95 = b_p95 * (1.0 + reg_p95_rise)
+              print(f"Baseline: EPS_mean={b_eps:.1f}, p95_ms={b_p95:.1f}; allowed min_eps={min_eps:.1f}, max_p95={max_p95:.1f}")
+              if eps < min_eps:
+                raise SystemExit(f"FAIL: EPS regression beyond {reg_eps_drop*100:.0f}% (got {eps:.1f} < {min_eps:.1f})")
+              if p95 > max_p95:
+                raise SystemExit(f"FAIL: p95 regression beyond {reg_p95_rise*100:.0f}% (got {p95:.1f} > {max_p95:.1f})")
+            else:
+              print("Skipping regression check: params mismatch between current and baseline")
+          else:
+            print("No baseline found; skipping regression check")
+
+          print("Perf guard passed")
           PY
