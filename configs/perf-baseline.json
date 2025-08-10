@@ -1,7 +1,7 @@
 {
   "params": {"d": 100, "n": 200000, "runs": 3, "fdr_q": 0.01, "epsilon": 0.005, "delta": 0.0},
-  "eps_mean": 15000.0,
-  "latency_ms_p95": 300.0,
+  "eps_mean": 8000.0,
+  "latency_ms_p95": 26000.0,
   "note": "Initial conservative baseline for GitHub-hosted runners. Adjust after first few runs."
 }
 
