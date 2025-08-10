@@ -4,6 +4,7 @@ from bolcd.connectors.normalize import normalize_event_to_logical
 from bolcd.connectors.splunk import SplunkConnector
 from bolcd.connectors.sentinel import SentinelConnector
 from bolcd.connectors.opensearch import OpenSearchConnector
+from bolcd.connectors.sigma import load_sigma_yaml, parse_sigma_to_events
 
 
 def test_normalize_event_to_logical():
@@ -77,11 +78,6 @@ def test_connectors_ingest_and_writeback_stubs():
     os_payload = {"hits": {"hits": [{"_source": {"x": 1}}, {"_source": {"x": 2}}]}}
     os_conn = OpenSearchConnector("http://os", {"basic": "abc"}, client=FakeClient(payload=os_payload))
     assert [r["x"] for r in os_conn.ingest({"query": {"match_all": {}}})] == [1, 2]
-
-
-
-from bolcd.connectors.sigma import load_sigma_yaml, parse_sigma_to_events
-
 
 def test_sigma_parse(tmp_path):
     y = tmp_path / "r.yml"

@@ -5,7 +5,7 @@ import json
 from dataclasses import dataclass, asdict
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, List
 
 
 @dataclass
