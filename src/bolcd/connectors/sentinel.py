@@ -32,8 +32,19 @@ class SentinelConnector:
         url = f"https://api.loganalytics.io/v1/workspaces/{self.workspace_id}/query"
         if not self.client:
             return []
-        resp = self.client.post(url, headers=self._auth_headers(), json={"query": kql})
-        resp.raise_for_status()
+        # Simple retry loop
+        last_exc: Exception | None = None
+        for _ in range(3):
+            try:
+                resp = self.client.post(url, headers=self._auth_headers(), json={"query": kql})
+                resp.raise_for_status()
+                break
+            except Exception as e:  # pragma: no cover
+                last_exc = e
+        else:
+            if last_exc:
+                raise last_exc
+        
         data = resp.json()
         tables = data.get("tables") or []
         out = []
@@ -78,7 +89,17 @@ class SentinelConnector:
             get_url = f"{base}/{name}?api-version={api_version}"
             # PUT is both create or replace; existence check only for idempotency semantics/logging
             put_url = get_url
-            rr = self.client.put(put_url, headers=self._auth_headers(), json=body)
-            rr.raise_for_status()
+            # retry PUT
+            last: Exception | None = None
+            for _ in range(3):
+                try:
+                    rr = self.client.put(put_url, headers=self._auth_headers(), json=body)
+                    rr.raise_for_status()
+                    break
+                except Exception as e:  # pragma: no cover
+                    last = e
+            else:
+                if last:
+                    raise last
             written += 1
         return {"status": "ok", "written": written}

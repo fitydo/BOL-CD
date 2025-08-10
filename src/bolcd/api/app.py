@@ -18,9 +18,11 @@ from bolcd.io.jsonl import read_jsonl
 from bolcd.connectors.factory import make_connector
 from bolcd.audit.store import JSONLAuditStore
 from .middleware import install_middlewares, verify_role
+from bolcd.ui.dashboard import router as dashboard_router
 
 app = FastAPI(title="ChainLite API (BOL‑CD for SOC)", version="0.1.0")
 install_middlewares(app)
+app.include_router(dashboard_router)
 
 CONFIG_DIR = Path(__file__).resolve().parents[3] / "configs"
 AUDIT_PATH = Path(__file__).resolve().parents[3] / "logs" / "audit.jsonl"

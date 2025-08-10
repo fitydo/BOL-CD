@@ -1,0 +1,4 @@
+# file: \\wsl.localhost\Ubuntu-24.04\home\yoshi\workspace\BOL-CD\src\bolcd\connectors\sentinel.py
+# hypothesis_version: 6.137.1
+
+[30.0, '2023-02-01-preview', 'Authorization', 'Content-Type', 'GreaterThan', 'Medium', 'PT5M', 'Scheduled', 'application/json', 'bolcd_rule', 'columns', 'displayName', 'enabled', 'kind', 'kql', 'missing ARM config', 'name', 'ok', 'properties', 'query', 'queryFrequency', 'queryPeriod', 'reason', 'rows', 'search', 'severity', 'skipped', 'status', 'tables', 'triggerOperator', 'triggerThreshold', 'written']

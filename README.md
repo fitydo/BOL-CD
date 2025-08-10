@@ -3,6 +3,25 @@
 Implements core algorithms and a FastAPI service per `docs/design.md` and `api/openapi.yaml`.
 
 ## Quickstart
+### Reproducible Acceptance (seeded synthetic dataset)
+
+Generate the deterministic dataset (seed=42), recompute, and run acceptance checks:
+
+```bash
+python scripts/generate_synth_dataset.py
+python -m bolcd.cli.recompute --events data/synth/events_seed42.jsonl --thresholds configs/thresholds.yaml --segments configs/segments.yaml --out-json graph.json
+python scripts/acceptance_check.py
+```
+
+Private/on‑prem data overrides (never in CI):
+
+```bash
+export BOLCD_ACCEPT_DATA=/secure/events.jsonl
+export BOLCD_ACCEPT_GT=/secure/gt_graph.json
+python scripts/acceptance_check.py
+```
+
+To strictly enforce functional gates locally (alerts/duplicates/FPR), set `ACCEPT_ENFORCE=1`.
 
 - Install: `pip install -r requirements.txt`
 - Run API: `uvicorn bolcd.api.app:app --reload --port 8080`

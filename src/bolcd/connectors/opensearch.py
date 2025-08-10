@@ -24,8 +24,18 @@ class OpenSearchConnector:
         url = f"{self.endpoint}/_search"
         if not self.client:
             return []
-        resp = self.client.post(url, json=dsl, headers=self._headers())
-        resp.raise_for_status()
+        # Retry once on failure
+        last: Exception | None = None
+        for _ in range(3):
+            try:
+                resp = self.client.post(url, json=dsl, headers=self._headers())
+                resp.raise_for_status()
+                break
+            except Exception as e:  # pragma: no cover
+                last = e
+        else:
+            if last:
+                raise last
         data = resp.json()
         hits = data.get("hits", {}).get("hits", [])
         return [h.get("_source", {}) for h in hits]
@@ -44,7 +54,17 @@ class OpenSearchConnector:
             self._validate_rule(rule)
             name = rule.get("name")
             url = f"{self.endpoint}/bolcd-rules/_doc/{name}"
-            r = self.client.put(url, json=rule, headers=self._headers())
-            r.raise_for_status()
+            # Idempotent upsert
+            last: Exception | None = None
+            for _ in range(3):
+                try:
+                    r = self.client.put(url, json=rule, headers=self._headers())
+                    r.raise_for_status()
+                    break
+                except Exception as e:  # pragma: no cover
+                    last = e
+            else:
+                if last:
+                    raise last
             written += 1
         return {"status": "ok", "written": written}
