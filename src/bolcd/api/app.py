@@ -96,6 +96,20 @@ async def recompute(req: RecomputeRequest, request: Request, _: None = Depends(v
     else:
         events = generate_synthetic_events(metric_names)
 
+    # Infer thresholds for metrics present in events but missing from config
+    if events:
+        exclude = set(segment_keys or [])
+        missing: Dict[str, float] = {}
+        for ev in events[: min(1000, len(events))]:
+            for k, v in ev.items():
+                if k in exclude:
+                    continue
+                if isinstance(v, (int, float)) or v is None:
+                    if k not in thresholds:
+                        missing[k] = 0.5
+        if missing:
+            thresholds.update(missing)
+
     graphs = learn_graphs_by_segments(
         events=events,
         thresholds=thresholds or {m: 0.5 for m in metric_names},

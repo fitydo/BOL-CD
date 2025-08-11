@@ -65,6 +65,12 @@ def learn_graph_from_events(
                 q_value=q_val,
             )
 
+    # Capture pre-TR edges (accepted before reduction)
+    edges_pre_tr: List[Dict[str, Any]] = []
+    for u, v in accepted_pairs:
+        ge = edge_detail[(u, v)]
+        edges_pre_tr.append(asdict(ge))
+
     # Transitive reduction on accepted pairs
     reduced_pairs = transitive_reduction(accepted_pairs)
 
@@ -74,7 +80,7 @@ def learn_graph_from_events(
         ge = edge_detail[(u, v)]
         edges.append(asdict(ge))
 
-    return {"nodes": nodes, "edges": edges}
+    return {"nodes": nodes, "edges": edges, "edges_pre_tr": edges_pre_tr}
 
 
 def generate_synthetic_events(metric_names: Sequence[str], n: int = 1200) -> List[Dict[str, float]]:
@@ -132,15 +138,22 @@ def learn_graphs_by_segments(
     per_segment: Dict[str, Dict[str, Any]] = {}
     union_nodes: set[str] = set()
     union_edges: List[Dict[str, Any]] = []
+    union_edges_pre: List[Dict[str, Any]] = []
 
     for seg_tuple, seg_events in buckets.items():
         graph = learn_graph_from_events(seg_events, thresholds, margin_delta, fdr_q, epsilon)
         seg_key = ",".join(str(v) for v in seg_tuple) if seg_tuple else "__all__"
-        # annotate edges with segment label
-        for e in graph["edges"]:
+        # annotate edges with segment label (pre-TR and post-TR)
+        for e in graph.get("edges", []):
+            e["segment"] = seg_key
+        for e in graph.get("edges_pre_tr", []):
             e["segment"] = seg_key
         per_segment[seg_key] = graph
         union_nodes.update(graph["nodes"])
         union_edges.extend(graph["edges"])
+        union_edges_pre.extend(graph.get("edges_pre_tr", []))
 
-    return {"segments": per_segment, "union": {"nodes": sorted(union_nodes), "edges": union_edges}}
+    return {
+        "segments": per_segment,
+        "union": {"nodes": sorted(union_nodes), "edges": union_edges, "edges_pre_tr": union_edges_pre},
+    }

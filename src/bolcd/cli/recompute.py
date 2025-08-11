@@ -35,6 +35,20 @@ def main(argv: List[str] | None = None) -> int:
         segment_keys = [s.get("key") for s in seg_cfg.get("segments", [])]
 
     events = list(read_jsonl(args.events))
+    # Infer thresholds for metrics present in events but missing from config
+    inferred: Dict[str, float] = {}
+    if events:
+        # Collect candidate metric names from events (exclude segment keys)
+        exclude = set(segment_keys or [])
+        for ev in events[: min(1000, len(events))]:
+            for k, v in ev.items():
+                if k in exclude:
+                    continue
+                if isinstance(v, (int, float)) or v is None:
+                    if k not in thresholds:
+                        inferred[k] = 0.5
+        if inferred:
+            thresholds = {**thresholds, **inferred}
     graphs = learn_graphs_by_segments(
         events=events,
         thresholds=thresholds,
