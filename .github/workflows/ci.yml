@@ -24,6 +24,10 @@ jobs:
         run: ruff check .
       - name: Package
         run: python -m build || true
+      - name: Generate SBOM (pip freeze)
+        run: |
+          pip freeze > sbom.txt
+          echo "SBOM written to sbom.txt"
       - name: Acceptance gate (enforced)
         env:
           ACCEPT_ENFORCE: '1'

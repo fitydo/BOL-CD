@@ -1,4 +1,4 @@
-# BOL-CD (ChainLite)
+# BOL-CD (ChainLite) — v0.1.1
 
 Implements core algorithms and a FastAPI service per `docs/design.md` and `api/openapi.yaml`.
 
