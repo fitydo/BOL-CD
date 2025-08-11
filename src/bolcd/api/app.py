@@ -20,7 +20,7 @@ from bolcd.audit.store import JSONLAuditStore, SQLiteAuditStore
 from .middleware import install_middlewares, verify_role
 from bolcd.ui.dashboard import router as dashboard_router
 
-app = FastAPI(title="ChainLite API (BOL‑CD for SOC)", version="0.1.0")
+app = FastAPI(title="ChainLite API (BOL‑CD for SOC)", version="0.2.0")
 install_middlewares(app)
 app.include_router(dashboard_router)
 
