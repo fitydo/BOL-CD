@@ -120,10 +120,14 @@ def main() -> int:
         from pathlib import Path as _P
         _s.path.insert(0, str(_P('src').resolve()))
         from bolcd.cli.recompute import main as recompute_main  # type: ignore
+        fdr_q = os.environ.get('ACCEPT_FDR_Q', '0.10')
+        epsilon = os.environ.get('ACCEPT_EPSILON', '0.02')
         rc = recompute_main([
             '--events', data_path,
             '--thresholds', 'configs/thresholds.yaml',
             '--segments', 'configs/segments.yaml',
+            '--fdr-q', fdr_q,
+            '--epsilon', epsilon,
             '--out-json', str(out_union.as_posix()),
         ])
         if rc != 0:
