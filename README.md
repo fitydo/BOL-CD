@@ -36,6 +36,21 @@ To strictly enforce functional gates locally (alerts/duplicates/FPR), set `ACCEP
   python -m bolcd.cli.recompute --events data/sample_events.jsonl --thresholds configs/thresholds.yaml --epsilon 0.02 --margin-delta 0.0 --fdr-q 0.01 --out-json graph.json
   ```
 
+### Fetch real data for development (dev-only)
+
+```bash
+# Splunk example (requires env: BOLCD_SPLUNK_URL, BOLCD_SPLUNK_TOKEN)
+python scripts/fetch_data.py splunk 'index=security earliest=-1d | head 10000' --out data/raw/splunk_1d.jsonl
+
+# Sentinel example (requires env: BOLCD_SENTINEL_WORKSPACE_ID, BOLCD_AZURE_TOKEN)
+python scripts/fetch_data.py sentinel 'SecurityEvent | take 10000' --out data/raw/sentinel_1d.jsonl
+
+# OpenSearch example (requires env: BOLCD_OPENSEARCH_ENDPOINT)
+python scripts/fetch_data.py opensearch '{"query":{"match_all":{}},"size":10000}' --out data/raw/os_1d.jsonl
+```
+
+Note: This script is for development only. Ensure output files under `data/raw/` are excluded from VCS.
+
 ## Write-back (CLI)
 
 - Dry-run preview (no network):

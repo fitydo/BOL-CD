@@ -38,6 +38,7 @@ reports/
 graphs/
 data/**/*.jsonl
 data/synth/
+data/raw/
 
 # Log files
 logs/
