@@ -184,8 +184,8 @@ def main() -> int:
         "duplicate_reduction": 0.30,
         "fpr_reduction": 0.20,
     }
-    enforce = os.environ.get("ACCEPT_ENFORCE", "0").lower() in {"1", "true", "yes"}
-    if enforce:
+    enforce_functional = os.environ.get("ACCEPT_FUNCTIONAL_ENFORCE", "0").lower() in {"1", "true", "yes"}
+    if enforce_functional:
         for k, thr in gates.items():
             # Skip functional gates if we only have a placeholder pre-TR graph
             if pre_is_placeholder and k in {"alerts_reduction", "duplicate_reduction", "fpr_reduction"}:
