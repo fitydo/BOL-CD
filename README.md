@@ -59,6 +59,17 @@ python scripts/ab_report.py --a data/raw/splunk_A_2025-08-11.jsonl --b data/raw/
 ```
 `reports/ab_*.json` と `ab_*.md` が出力され、削減率や上位の抑制カテゴリ/回帰を確認できます。
 
+### Weekly aggregation
+
+```bash
+python scripts/ab_weekly.py \
+  --prefix-a data/raw/splunk_A_ --prefix-b data/raw/splunk_B_ \
+  --start 2025-08-05 --end 2025-08-11 \
+  --keys source severity signature rule_name \
+  --out-prefix reports/ab_weekly_2025-08-05_2025-08-11
+```
+CSV と Markdown を `reports/` に出力します。
+
 ## Write-back (CLI)
 
 - Dry-run preview (no network):
