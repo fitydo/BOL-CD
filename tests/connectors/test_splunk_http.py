@@ -46,6 +46,17 @@ def test_splunk_ingest_streaming_and_pagination():
     assert [r["a"] for r in out] == [1, 2]
 
 
+def test_splunk_pagination_loop_guard():
+    # next_offset repeats -> should break due to guard
+    first = MockResp(json_obj={"results": [{"a": 1}], "next_offset": 5})
+    repeat = MockResp(json_obj={"results": [{"a": 2}], "next_offset": 5})
+    client = MockClient([first] + [repeat] * 3)
+    c = SplunkConnector("http://splunk", "tkn", client=client)
+    out = list(c.ingest("index=main | head 2"))
+    # We should not hang; we should collect first + one repeat
+    assert [r["a"] for r in out][:2] == [1, 2]
+
+
 def test_splunk_writeback_upsert():
     # Existence -> 404 then create, then update existing
     not_found = MockResp(status_code=404)  # GET exists -> 404

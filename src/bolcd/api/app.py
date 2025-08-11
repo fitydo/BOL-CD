@@ -65,6 +65,19 @@ async def health(request: Request) -> Dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/livez")
+async def livez() -> Dict[str, str]:
+    # Basic liveness: process is up
+    return {"status": "ok"}
+
+
+@app.get("/readyz")
+async def readyz() -> Dict[str, str]:
+    # Simple readiness: app object exists and metrics registry is initialized
+    _ = REGISTRY
+    return {"status": "ok"}
+
+
 @app.get("/metrics")
 async def metrics() -> Any:
     return generate_latest(REGISTRY), 200, {"Content-Type": CONTENT_TYPE_LATEST}
