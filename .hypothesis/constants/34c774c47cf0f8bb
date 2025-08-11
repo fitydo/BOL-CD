@@ -1,0 +1,4 @@
+# file: \\wsl.localhost\Ubuntu-24.04\home\yoshi\workspace\BOL-CD\src\bolcd\api\app.py
+# hypothesis_version: 6.137.1
+
+[0.005, 0.01, 0.5, 100, 200, 1000, '/api/audit', '/api/edges/recompute', '/api/encode', '/api/graph', '/api/health', '/api/siem/writeback', '/metrics', '0.1.0', '0b', 'Content-Type', 'Total API requests', 'X', 'X-API-Key', 'Y', 'Z', 'anonymous', 'audit.jsonl', 'b', 'bolcd_requests_total', 'configs', 'dry-run', 'edges', 'epsilon', 'example', 'graphml', 'json', 'key', 'last_graphs', 'logs', 'metrics', 'nodes', 'ok', 'operator', 'outputs', 'path', 'persist', 'r', 'recompute', 'rules', 'segments', 'segments.yaml', 'status', 'target', 'threshold', 'thresholds.yaml', 'union', 'utf-8', 'viewer']

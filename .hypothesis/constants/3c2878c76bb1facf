@@ -1,0 +1,4 @@
+# file: \\wsl.localhost\Ubuntu-24.04\home\yoshi\workspace\BOL-CD\src\bolcd\core\pipeline.py
+# hypothesis_version: 6.137.1
+
+[0.0, 1.0, 1200, ',', '__all__', 'edges', 'edges_pre_tr', 'nodes', 'segment', 'segments', 'union']

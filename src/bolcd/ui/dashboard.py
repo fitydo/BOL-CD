@@ -25,116 +25,81 @@ def dashboard() -> Response:
     .label { font-size: 10px; pointer-events: none; }
     .btn { padding: 4px 8px; font-size: 12px; }
     input[type="text"], input[type="number"] { padding: 2px 4px; font-size: 12px; }
+    #audit { padding: 8px 12px; background: #fafafa; border-top: 1px solid #eee; max-height: 30vh; overflow: auto; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
   <script>
-    let svg, g, simulation, color, width, height, allLinks = [], allNodes = [];
+    (function(){
+      var SVGNS = 'http://www.w3.org/2000/svg';
+      function byId(id){ return document.getElementById(id); }
 
-    function setupSvg() {
-      width = document.getElementById('chart').clientWidth;
-      height = document.getElementById('chart').clientHeight;
-      d3.select('#chart').selectAll('*').remove();
-      svg = d3.select('#chart').append('svg')
-        .attr('viewBox', [0, 0, width, height])
-        .call(d3.zoom().on('zoom', (event) => g.attr('transform', event.transform)));
-      g = svg.append('g');
-      svg.append('defs').append('marker')
-        .attr('id', 'arrow')
-        .attr('viewBox', '0 -5 10 10')
-        .attr('refX', 15)
-        .attr('refY', 0)
-        .attr('markerWidth', 6)
-        .attr('markerHeight', 6)
-        .attr('orient', 'auto')
-        .append('path')
-        .attr('d', 'M0,-5L10,0L0,5')
-        .attr('fill', '#999');
-    }
+      function render(graph){
+        var chart = byId('chart');
+        while (chart.firstChild) chart.removeChild(chart.firstChild);
+        var w = chart.clientWidth || 900;
+        var h = chart.clientHeight || 520;
+        var svg = document.createElementNS(SVGNS, 'svg');
+        svg.setAttribute('width', w);
+        svg.setAttribute('height', h);
+        svg.setAttribute('viewBox', '0 0 '+w+' '+h);
+        chart.appendChild(svg);
 
-    function updateLegend(links) {
-      const segs = Array.from(new Set(links.map(e => e.segment)));
-      const legend = d3.select('#legend');
-      legend.selectAll('*').remove();
-      segs.forEach(seg => {
-        const id = `seg_${seg}`;
-        const wrap = legend.append('label');
-        wrap.append('input').attr('type','checkbox').attr('id', id).property('checked', true)
-          .on('change', () => drawGraph());
-        wrap.append('span').text(` ${seg}`);
-      });
-    }
+        var defs = document.createElementNS(SVGNS, 'defs');
+        var m = document.createElementNS(SVGNS, 'marker');
+        m.setAttribute('id','arrow'); m.setAttribute('viewBox','0 -5 10 10');
+        m.setAttribute('refX','12'); m.setAttribute('refY','0');
+        m.setAttribute('markerWidth','6'); m.setAttribute('markerHeight','6'); m.setAttribute('orient','auto');
+        var p = document.createElementNS(SVGNS, 'path'); p.setAttribute('d','M0,-5L10,0L0,5'); p.setAttribute('fill','#888');
+        m.appendChild(p); defs.appendChild(m); svg.appendChild(defs);
 
-    function allowedSegments() {
-      const checks = document.querySelectorAll('#legend input[type=checkbox]');
-      const active = new Set();
-      checks.forEach(ch => { if (ch.checked) active.add(ch.nextSibling.textContent.trim()); });
-      return active;
-    }
+        var nodes = (graph.nodes || []).slice();
+        var edges = (graph.edges || []).slice();
+        var pos = {};
+        var n = nodes.length;
+        for (var i=0;i<n;i++){
+          var x = 120 + i * Math.max(150, Math.min(240, Math.floor(w/(n+1))));
+          var y = Math.floor(h/2);
+          pos[nodes[i]] = {x:x,y:y};
+        }
 
-    async function loadGraph() {
-      const res = await fetch('/api/graph');
-      const graph = await res.json();
-      allNodes = (graph.nodes || []).map(id => ({ id }));
-      allLinks = (graph.edges || []).map(e => ({ source: e.src, target: e.dst, segment: e.segment || '__all__' }));
-      updateLegend(allLinks);
-      drawGraph();
-    }
+        for (var j=0;j<edges.length;j++){
+          var e = edges[j], s = pos[e.src], t = pos[e.dst];
+          if (!s || !t) continue;
+          var line = document.createElementNS(SVGNS, 'line');
+          line.setAttribute('x1', s.x); line.setAttribute('y1', s.y);
+          line.setAttribute('x2', t.x); line.setAttribute('y2', t.y);
+          line.setAttribute('stroke', '#888'); line.setAttribute('stroke-width','2');
+          line.setAttribute('marker-end','url(#arrow)'); svg.appendChild(line);
+        }
+        for (var k=0;k<n;k++){
+          var c = document.createElementNS(SVGNS, 'circle');
+          c.setAttribute('cx', pos[nodes[k]].x); c.setAttribute('cy', pos[nodes[k]].y);
+          c.setAttribute('r','7'); c.setAttribute('fill','#4285f4'); svg.appendChild(c);
+          var t = document.createElementNS(SVGNS, 'text'); t.setAttribute('x', pos[nodes[k]].x + 10);
+          t.setAttribute('y', pos[nodes[k]].y + 4); t.setAttribute('font-size','12'); t.textContent = nodes[k]; svg.appendChild(t);
+        }
+      }
 
-    function drawGraph() {
-      setupSvg();
-      color = d3.scaleOrdinal(d3.schemeTableau10);
-      const activeSegs = allowedSegments();
-      const links = allLinks.filter(l => activeSegs.has(l.segment));
-      const nodes = allNodes;
-
-      simulation = d3.forceSimulation(nodes)
-        .force('link', d3.forceLink(links).id(d => d.id).distance(60))
-        .force('charge', d3.forceManyBody().strength(-120))
-        .force('center', d3.forceCenter(width / 2, height / 2));
-
-      const link = g.append('g').attr('stroke', '#999').attr('stroke-opacity', 0.6)
-        .selectAll('line').data(links).join('line').attr('class','link')
-        .attr('stroke', d => color(d.segment)).attr('marker-end','url(#arrow)');
-
-      const node = g.append('g').attr('stroke','#fff').attr('stroke-width',1.5)
-        .selectAll('circle').data(nodes).join('circle').attr('r',5).attr('fill','#4285f4')
-        .call(d3.drag().on('start',dragstarted).on('drag',dragged).on('end',dragended));
-
-      const label = g.append('g').selectAll('text').data(nodes).join('text')
-        .attr('class','label').attr('dx',8).attr('dy','0.35em').text(d=>d.id);
-
-      simulation.on('tick', () => {
-        link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
-            .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
-        node.attr('cx', d => d.x).attr('cy', d => d.y);
-        label.attr('x', d => d.x).attr('y', d => d.y);
-      });
-
-      function dragstarted(event){ if(!event.active) simulation.alphaTarget(0.3).restart(); event.subject.fx=event.subject.x; event.subject.fy=event.subject.y; }
-      function dragged(event){ event.subject.fx=event.x; event.subject.fy=event.y; }
-      function dragended(event){ if(!event.active) simulation.alphaTarget(0); event.subject.fx=null; event.subject.fy=null; }
-    }
-
-    async function runRecompute() {
-      const key = document.getElementById('apikey').value.trim();
-      const fdrq = parseFloat(document.getElementById('fdrq').value);
-      const eps = parseFloat(document.getElementById('epsilon').value);
-      if (key) localStorage.setItem('bolcd_apikey', key);
-      const res = await fetch('/api/edges/recompute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': key || '' },
-        body: JSON.stringify({ fdr_q: fdrq, epsilon: eps })
-      });
-      if (!res.ok) { alert('Recompute failed: ' + res.status); return; }
-      await loadGraph();
-    }
-
-    function init() {
-      const saved = localStorage.getItem('bolcd_apikey');
-      if (saved) document.getElementById('apikey').value = saved;
-      loadGraph();
-    }
-    window.addEventListener('load', init);
+      function loadGraph(){ fetch('/api/graph').then(function(r){ return r.json(); }).then(render); }
+      window.runRecompute = function(){
+        var key = byId('apikey').value.trim();
+        var fdrq = parseFloat(byId('fdrq').value);
+        var eps = parseFloat(byId('epsilon').value);
+        if (key) localStorage.setItem('bolcd_apikey', key);
+        fetch('/api/edges/recompute', { method:'POST', headers:{'Content-Type':'application/json','X-API-Key': key || ''}, body: JSON.stringify({fdr_q:fdrq, epsilon:eps}) })
+          .then(function(r){ if(!r.ok){ alert('Recompute failed: '+r.status); return; } loadGraph(); });
+      };
+      window.showAudit = function(){
+        var v = byId('viewkey').value.trim();
+        var op = byId('apikey').value.trim();
+        if (v) localStorage.setItem('bolcd_viewkey', v);
+        var key = v || op;
+        fetch('/api/audit', { headers: { 'X-API-Key': key || '' }})
+          .then(function(r){ if(!r.ok){ byId('audit').textContent = 'Audit fetch failed: '+r.status; return null; } return r.json(); })
+          .then(function(data){ if(!data) return; var lines = data.map(function(e){ var ts=e.ts||''; var actor=e.actor||''; var action=e.action||''; var edges=(e.diff&&e.diff.edges!=null)?e.diff.edges:''; var nodes=(e.diff&&e.diff.nodes!=null)?e.diff.nodes:''; return ts+' | '+actor+' | '+action+' | edges='+edges+' nodes='+nodes;}); byId('audit').textContent = lines.join('\n'); });
+      };
+      function init(){ var saved=localStorage.getItem('bolcd_apikey'); if(saved) byId('apikey').value=saved; loadGraph(); }
+      window.addEventListener('DOMContentLoaded', init);
+    })();
   </script>
 </head>
 <body>
@@ -145,17 +110,26 @@ def dashboard() -> Response:
     <span>|</span>
     <a href="/metrics">/metrics</a>
     <span>|</span>
-    <a href="/api/audit">/api/audit</a>
+    <a href="#" onclick="showAudit(); return false;">/api/audit</a>
     <span>|</span>
     <label>API Key (operator): <input id="apikey" type="text" size="20" placeholder="testop"/></label>
+    <label>API Key (viewer): <input id="viewkey" type="text" size="14" placeholder="view"/></label>
     <label>fdr_q: <input id="fdrq" type="number" step="0.001" value="0.01"/></label>
     <label>epsilon: <input id="epsilon" type="number" step="0.001" value="0.005"/></label>
     <button class="btn" onclick="runRecompute()">Run recompute</button>
     <div id="legend"></div>
   </div>
   <div id="chart"></div>
+  <pre id="audit"></pre>
 </body>
 </html>
     """
-    return Response(content=html, media_type="text/html")
+    return Response(
+        content=html,
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-store, max-age=0",
+            "Pragma": "no-cache",
+        },
+    )
 
