@@ -1,0 +1,22 @@
+{{- if .Values.monitor.serviceMonitorEnabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "bolcd.fullname" . }}
+  labels:
+    app: {{ include "bolcd.name" . }}
+    release: {{ .Values.monitor.prometheusRelease | default "prometheus" | quote }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "bolcd.name" . }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: {{ .Values.monitor.scrapeInterval | default "30s" }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+{{- end }}
+
+

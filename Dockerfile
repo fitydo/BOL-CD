@@ -26,6 +26,11 @@ COPY --from=base /usr/local/lib/python3.11 /usr/local/lib/python3.11
 COPY --from=base /usr/local/bin /usr/local/bin
 COPY --from=base /app /app
 
+RUN groupadd -g 10001 app || true \
+ && useradd -r -u 10001 -g app app || true \
+ && mkdir -p /app/logs \
+ && chown -R 10001:10001 /app/logs
+
 EXPOSE 8080
 ENV BOLCD_API_KEYS="" \
     BOLCD_SPLUNK_URL="" \
@@ -37,12 +42,48 @@ ENV BOLCD_API_KEYS="" \
     BOLCD_AZURE_WORKSPACE_NAME="" \
     BOLCD_OPENSEARCH_ENDPOINT="" \
     BOLCD_OPENSEARCH_BASIC=""
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD python - <<'PY' || exit 1
-import json,sys,urllib.request
-try:
-    with urllib.request.urlopen('http://127.0.0.1:8080/api/health', timeout=3) as r:
-        sys.exit(0 if r.status==200 else 1)
-except Exception:
-    sys.exit(1)
-PY
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD python -c "import sys,urllib.request;\
+\n\
+\n\
+\n\
+\n\
+\n\
+\n\
+\n\
+\n\
+\n\
+\n\
+\n\
+\n\
+\n\
+\n\
+\n\
+\
+\
+\
+\n\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\n\
+\
+\
+\
+\
+\
+              \n\
+try:\n    r=urllib.request.urlopen('http://127.0.0.1:8080/livez', timeout=3); sys.exit(0 if r.status==200 else 1)\nexcept Exception:\n    sys.exit(1)"
+USER 10001:10001
 CMD ["uvicorn", "bolcd.api.app:app", "--host", "0.0.0.0", "--port", "8080"]

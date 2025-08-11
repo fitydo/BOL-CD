@@ -5,7 +5,7 @@ metadata:
   labels:
     app: {{ include "bolcd.name" . }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount | default 1 }}
   selector:
     matchLabels:
       app: {{ include "bolcd.name" . }}
@@ -14,25 +14,89 @@ spec:
       labels:
         app: {{ include "bolcd.name" . }}
     spec:
+      {{- if .Values.podSecurityContext }}
+      securityContext:
+{{ toYaml .Values.podSecurityContext | indent 8 }}
+      {{- end }}
       containers:
         - name: api
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.service.port }}
+          {{- if .Values.securityContext }}
+          securityContext:
+{{ toYaml .Values.securityContext | indent 12 }}
+          {{- end }}
           env:
+            {{- if and .Values.apiKeysSecret .Values.apiKeysSecret.enabled }}
+            - name: BOLCD_API_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.apiKeysSecret.name | quote }}
+                  key: {{ .Values.apiKeysSecret.key | quote }}
+            {{- else }}
             - name: BOLCD_API_KEYS
               value: {{ .Values.env.BOLCD_API_KEYS | quote }}
+            {{- end }}
+          {{- if .Values.envVars }}
+          {{- range .Values.envVars }}
+            - name: {{ .name | quote }}
+              value: {{ .value | quote }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.secretEnv }}
+          {{- range .Values.secretEnv }}
+            - name: {{ .name | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretName | quote }}
+                  key: {{ .secretKey | quote }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.envFromSecretName }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.envFromSecretName | quote }}
+          {{- end }}
           readinessProbe:
             httpGet:
-              path: /api/health
+              path: /readyz
               port: {{ .Values.service.port }}
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /api/health
+              path: /livez
               port: {{ .Values.service.port }}
             initialDelaySeconds: 10
             periodSeconds: 20
+          {{- if .Values.resources }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          {{- end }}
+          {{- if or .Values.logs.emptyDir (and .Values.persistence .Values.persistence.logs .Values.persistence.logs.enabled) .Values.extraVolumeMounts }}
+          volumeMounts:
+            {{- if or (.Values.logs.emptyDir) (and .Values.persistence .Values.persistence.logs .Values.persistence.logs.enabled) }}
+            - name: logs
+              mountPath: /app/logs
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+{{ toYaml . | indent 12 }}
+            {{- end }}
+          {{- end }}
+      {{- if or .Values.logs.emptyDir (and .Values.persistence .Values.persistence.logs .Values.persistence.logs.enabled) .Values.extraVolumes }}
+      volumes:
+        {{- if and .Values.persistence .Values.persistence.logs .Values.persistence.logs.enabled }}
+        - name: logs
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.logs.existingClaim | default (include "bolcd.fullname" .) }}-logs
+        {{- else if .Values.logs.emptyDir }}
+        - name: logs
+          emptyDir: {}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+{{ toYaml . | indent 8 }}
+        {{- end }}
+      {{- end }}
 

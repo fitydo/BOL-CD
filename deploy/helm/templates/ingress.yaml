@@ -1,0 +1,62 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "bolcd.fullname" . }}
+  labels:
+    app: {{ include "bolcd.name" . }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+  {{- end }}
+  {{- if .Values.ingress.basicAuth.enabled }}
+  annotations:
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: {{ .Values.ingress.basicAuth.secretName | quote }}
+    nginx.ingress.kubernetes.io/auth-realm: {{ .Values.ingress.basicAuth.realm | quote }}
+  {{- end }}
+spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  {{- if .Values.ingress.tls }}
+  tls:
+  {{- range .Values.ingress.tls }}
+    - hosts:
+      {{- range .hosts }}
+        - {{ . | quote }}
+      {{- end }}
+      secretName: {{ .secretName | quote }}
+  {{- end }}
+  {{- end }}
+  {{- if .Values.ingress.whitelistSourceRanges }}
+  whitelistSourceRanges:
+  {{- range .Values.ingress.whitelistSourceRanges }}
+    - {{ . | quote }}
+  {{- end }}
+  {{- end }}
+  rules:
+  {{- range .Values.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          - path: /api/
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "bolcd.fullname" $ }}
+                port:
+                  number: {{ $.Values.service.port }}
+          {{- if $.Values.ingress.exposeMetrics }}
+          - path: /metrics
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "bolcd.fullname" $ }}
+                port:
+                  number: {{ $.Values.service.port }}
+          {{- end }}
+  {{- end }}
+{{- end }}
+
+

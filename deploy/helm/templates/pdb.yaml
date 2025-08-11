@@ -1,0 +1,15 @@
+{{- if .Values.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "bolcd.fullname" . }}
+  labels:
+    app: {{ include "bolcd.name" . }}
+spec:
+  minAvailable: {{ .Values.pdb.minAvailable | default 1 }}
+  selector:
+    matchLabels:
+      app: {{ include "bolcd.name" . }}
+{{- end }}
+
+

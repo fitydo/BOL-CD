@@ -79,4 +79,18 @@ To strictly enforce functional gates locally (alerts/duplicates/FPR), set `ACCEP
   docker-compose up --build
   ```
 
+## Production Deploy (Helm)
+
+- Prereqs: Kubernetes cluster + Ingress controller
+- Prod values: `deploy/helm/values-prod.yaml`
+- Install:
+  ```
+  helm upgrade --install bolcd ./deploy/helm -n <namespace> -f deploy/helm/values-prod.yaml --create-namespace --wait
+  ```
+- Optional:
+  - Persistent audit logs: set `persistence.logs.enabled: true`
+  - Secret-based API keys: set `apiKeysSecret.enabled: true`
+  - Prometheus: set `monitor.serviceMonitorEnabled: true` when CRD exists
+  - Ingress metrics: set `ingress.exposeMetrics: true`
+
 Endpoints are under `/api/*` (see `api/openapi.yaml`).
