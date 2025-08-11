@@ -73,17 +73,21 @@ class SplunkConnector:
                 return results
         except Exception:
             pass
-        # Fallback full JSON with basic pagination support
+        # Fallback full JSON with robust pagination support (offset/continuation)
         payload = resp.json()
         if isinstance(payload, list):
             return payload
         out = payload.get("results", [])
-        if payload.get("next_offset") is not None:
-            offset = payload["next_offset"]
-            while offset is not None:
-                more = self._post(url, headers=self._auth_headers(), data={**data, "offset": offset}).json()
-                out.extend(more.get("results", []))
-                offset = more.get("next_offset")
+        seen = 0
+        offset = payload.get("next_offset")
+        while offset is not None and seen < 10000:  # guard against infinite loops
+            more = self._post(url, headers=self._auth_headers(), data={**data, "offset": offset}).json()
+            out.extend(more.get("results", []))
+            new_offset = more.get("next_offset")
+            if new_offset == offset:
+                break
+            offset = new_offset
+            seen += 1
         return out
 
     def writeback(self, rules: List[Dict[str, Any]]) -> Dict[str, Any]:

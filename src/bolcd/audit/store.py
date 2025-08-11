@@ -72,3 +72,73 @@ class JSONLAuditStore:
         return out
 
 
+class SQLiteAuditStore:
+    """SQLite-based audit store with simple schema and integrity hash.
+
+    Schema:
+      CREATE TABLE IF NOT EXISTS audit(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts TEXT NOT NULL,
+        actor TEXT NOT NULL,
+        action TEXT NOT NULL,
+        diff TEXT NOT NULL,
+        hash TEXT NOT NULL
+      );
+    """
+
+    def __init__(self, path: Path) -> None:
+        import sqlite3
+
+        self.path = path
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._db = sqlite3.connect(str(self.path))
+        self._db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS audit(
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              ts TEXT NOT NULL,
+              actor TEXT NOT NULL,
+              action TEXT NOT NULL,
+              diff TEXT NOT NULL,
+              hash TEXT NOT NULL
+            )
+            """
+        )
+        self._db.commit()
+
+    def _compute_hash(self, payload: Dict[str, Any]) -> str:
+        blob = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+        return hashlib.sha256(blob).hexdigest()
+
+    def append(self, actor: str, action: str, diff: Dict[str, Any]) -> AuditEntry:
+        base = {
+            "ts": datetime.now(UTC).isoformat(),
+            "actor": actor,
+            "action": action,
+            "diff": diff,
+        }
+        h = self._compute_hash(base)
+        entry = AuditEntry(hash=h, **base)  # type: ignore[arg-type]
+        self._db.execute(
+            "INSERT INTO audit(ts,actor,action,diff,hash) VALUES (?,?,?,?,?)",
+            (entry.ts, entry.actor, entry.action, json.dumps(entry.diff, ensure_ascii=False), entry.hash),
+        )
+        self._db.commit()
+        return entry
+
+    def tail(self, limit: int = 100) -> List[Dict[str, Any]]:
+        cur = self._db.execute(
+            "SELECT ts,actor,action,diff,hash FROM audit ORDER BY id DESC LIMIT ?",
+            (max(0, limit),),
+        )
+        rows = cur.fetchall()
+        out: List[Dict[str, Any]] = []
+        for ts, actor, action, diff_txt, h in rows:
+            try:
+                diff = json.loads(diff_txt)
+            except Exception:
+                diff = {"raw": diff_txt}
+            out.append({"ts": ts, "actor": actor, "action": action, "diff": diff, "hash": h})
+        return out
+
+

@@ -16,7 +16,7 @@ from bolcd.core.pipeline import (
 from bolcd.ui.graph_export import to_graphml, write_graph_files
 from bolcd.io.jsonl import read_jsonl
 from bolcd.connectors.factory import make_connector
-from bolcd.audit.store import JSONLAuditStore
+from bolcd.audit.store import JSONLAuditStore, SQLiteAuditStore
 from .middleware import install_middlewares, verify_role
 from bolcd.ui.dashboard import router as dashboard_router
 
@@ -25,8 +25,15 @@ install_middlewares(app)
 app.include_router(dashboard_router)
 
 CONFIG_DIR = Path(__file__).resolve().parents[3] / "configs"
-AUDIT_PATH = Path(__file__).resolve().parents[3] / "logs" / "audit.jsonl"
-AUDIT_STORE = JSONLAuditStore(AUDIT_PATH)
+LOG_DIR = Path(__file__).resolve().parents[3] / "logs"
+AUDIT_JSONL = LOG_DIR / "audit.jsonl"
+AUDIT_SQLITE = LOG_DIR / "audit.sqlite"
+use_sqlite = True
+try:
+    # Prefer SQLite; fallback to JSONL if sqlite unavailable for any reason
+    AUDIT_STORE = SQLiteAuditStore(AUDIT_SQLITE)
+except Exception:  # pragma: no cover
+    AUDIT_STORE = JSONLAuditStore(AUDIT_JSONL)
 
 # Metrics
 REGISTRY = CollectorRegistry()
