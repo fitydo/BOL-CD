@@ -6,6 +6,7 @@ from dataclasses import dataclass, asdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, List
+import threading
 
 
 @dataclass
@@ -91,7 +92,13 @@ class SQLiteAuditStore:
 
         self.path = path
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._db = sqlite3.connect(str(self.path))
+        # Allow usage across threads in TestClient / ASGI; guard with a lock
+        self._db = sqlite3.connect(str(self.path), check_same_thread=False)
+        try:
+            self._db.execute("PRAGMA journal_mode=WAL;")
+        except Exception:
+            pass
+        self._lock = threading.Lock()
         self._db.execute(
             """
             CREATE TABLE IF NOT EXISTS audit(
@@ -119,19 +126,21 @@ class SQLiteAuditStore:
         }
         h = self._compute_hash(base)
         entry = AuditEntry(hash=h, **base)  # type: ignore[arg-type]
-        self._db.execute(
-            "INSERT INTO audit(ts,actor,action,diff,hash) VALUES (?,?,?,?,?)",
-            (entry.ts, entry.actor, entry.action, json.dumps(entry.diff, ensure_ascii=False), entry.hash),
-        )
-        self._db.commit()
+        with self._lock:
+            self._db.execute(
+                "INSERT INTO audit(ts,actor,action,diff,hash) VALUES (?,?,?,?,?)",
+                (entry.ts, entry.actor, entry.action, json.dumps(entry.diff, ensure_ascii=False), entry.hash),
+            )
+            self._db.commit()
         return entry
 
     def tail(self, limit: int = 100) -> List[Dict[str, Any]]:
-        cur = self._db.execute(
-            "SELECT ts,actor,action,diff,hash FROM audit ORDER BY id DESC LIMIT ?",
-            (max(0, limit),),
-        )
-        rows = cur.fetchall()
+        with self._lock:
+            cur = self._db.execute(
+                "SELECT ts,actor,action,diff,hash FROM audit ORDER BY id DESC LIMIT ?",
+                (max(0, limit),),
+            )
+            rows = cur.fetchall()
         out: List[Dict[str, Any]] = []
         for ts, actor, action, diff_txt, h in rows:
             try:
