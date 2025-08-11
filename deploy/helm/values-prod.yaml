@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/fitydo/bol-cd
-  tag: latest
+  tag: sha-6cc6cec
   pullPolicy: IfNotPresent
 
 replicaCount: 2
@@ -119,14 +119,14 @@ persistence:
 
 monitor:
   serviceAnnotationsEnabled: true
-  serviceMonitorEnabled: false
+  serviceMonitorEnabled: true
   prometheusRelease: prometheus
   scrapeInterval: 30s
 
 backup:
-  enabled: false
+  enabled: true
   pvc:
-    enabled: false
+    enabled: true
     size: 20Gi
     storageClass: ""
     existingClaim: ""

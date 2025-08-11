@@ -85,12 +85,14 @@ To strictly enforce functional gates locally (alerts/duplicates/FPR), set `ACCEP
 - Prod values: `deploy/helm/values-prod.yaml`
 - Install:
   ```
-  helm upgrade --install bolcd ./deploy/helm -n <namespace> -f deploy/helm/values-prod.yaml --create-namespace --wait
+  # Use immutable image tag from GHCR (short SHA)
+  helm upgrade --install bolcd ./deploy/helm -n <namespace> -f deploy/helm/values-prod.yaml \
+    --set image.tag=sha-<short-sha> --create-namespace --wait
   ```
 - Optional:
   - Persistent audit logs: set `persistence.logs.enabled: true`
   - Secret-based API keys: set `apiKeysSecret.enabled: true`
-  - Prometheus: set `monitor.serviceMonitorEnabled: true` when CRD exists
+  - Prometheus: set `monitor.serviceMonitorEnabled: true` when CRD exists（本番では既定で有効化）
   - Ingress metrics: set `ingress.exposeMetrics: true`
 
 Endpoints are under `/api/*` (see `api/openapi.yaml`).
