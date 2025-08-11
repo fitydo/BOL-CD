@@ -95,7 +95,8 @@
 - しきい設計ミス → 変更履歴の監査・ロールバック
 
 ## 10. 実行方法（You’re on your own）
-- `make test`：単体/結合/性質テスト
-- `make bench EPS=50000`：性能ベンチ（p95 レイテンシ測定）
-- `make abtest`：SIEM 連携の A/B 試験を自動化
-- すべての結果は `/reports/YYYY‑MM‑DD/` に保存（CSV/MD）
+- ローカル:
+  - `pytest -q`（必要なら `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -q`）
+  - `bolcd-bench --d 100 --n 200000 --runs 3 --out reports/bench.json`
+- CI: GitHub Actions で自動実行（`perf-guard` と受け入れスクリプトを含む）
+- 受け入れ: `python scripts/acceptance_check.py`（`ACCEPT_ENFORCE=1` でFailを強制）

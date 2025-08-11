@@ -1,5 +1,7 @@
 # ADR-0004: 多段階（k‑ary）符号化の追加
 
+Status: Proposed (not yet implemented in code)
+
 ## 決定
 - 非単調関係対策として、k=4 などの段階を 2bit で表現するモードを追加。
 

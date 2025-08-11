@@ -2,7 +2,11 @@
 
 ## 1. デプロイ
 - Docker Compose / Kubernetes（Helm）に対応。
-- Secrets: `BOLCD_DB_URL`, `API_KEY`, `SIEM_CREDENTIALS`。
+- Secrets / 環境変数:
+  - `BOLCD_API_KEYS`（例: `view:viewer,testop:operator`）
+  - Splunk: `BOLCD_SPLUNK_URL`, `BOLCD_SPLUNK_TOKEN`
+  - Sentinel: `BOLCD_SENTINEL_WORKSPACE_ID`, `BOLCD_AZURE_TOKEN`, `BOLCD_AZURE_SUBSCRIPTION_ID`, `BOLCD_AZURE_RESOURCE_GROUP`, `BOLCD_AZURE_WORKSPACE_NAME`
+  - OpenSearch: `BOLCD_OPENSEARCH_ENDPOINT`, `BOLCD_OPENSEARCH_BASIC`
 
 ## 2. 初期設定
 - `configs/thresholds.yaml` と `configs/segments.yaml` を用意。
@@ -23,3 +27,4 @@
 
 ## 6. 監査
 - すべての辺追加/削除/しきい変更に署名ハッシュを付与し監査ログへ。
+- 監査ストア: JSONL（`logs/audit.jsonl`）を既定に使用。将来的に SQLite/WORM 化を検討。

@@ -27,6 +27,8 @@ SOC はアラート疲れ（alert fatigue）と重複調査が慢性化。SIEM �
 - Core: Alerts Reduction / Duplicate Reduction / FPR / p95 Latency / EPS
 - Explainability: 辺ごとの (n, k, 3/n, q) 出力率 100%
 
+CI 注記: PR CI では緩い性能閾と回帰チェックを適用（`perf-guard`）。本番 SLO は SLO/SLI を参照。
+
 ## 6. 非機能（NFR）
 - スループット ≥ 50k EPS/ノード、水平スケール可
 - セキュリティ：RBAC/監査ログ/暗号化、PII 最小化
