@@ -27,5 +27,22 @@ COPY --from=base /usr/local/bin /usr/local/bin
 COPY --from=base /app /app
 
 EXPOSE 8080
-ENV BOLCD_API_KEYS=""  
+ENV BOLCD_API_KEYS="" \
+    BOLCD_SPLUNK_URL="" \
+    BOLCD_SPLUNK_TOKEN="" \
+    BOLCD_SENTINEL_WORKSPACE_ID="" \
+    BOLCD_AZURE_TOKEN="" \
+    BOLCD_AZURE_SUBSCRIPTION_ID="" \
+    BOLCD_AZURE_RESOURCE_GROUP="" \
+    BOLCD_AZURE_WORKSPACE_NAME="" \
+    BOLCD_OPENSEARCH_ENDPOINT="" \
+    BOLCD_OPENSEARCH_BASIC=""
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD python - <<'PY' || exit 1
+import json,sys,urllib.request
+try:
+    with urllib.request.urlopen('http://127.0.0.1:8080/api/health', timeout=3) as r:
+        sys.exit(0 if r.status==200 else 1)
+except Exception:
+    sys.exit(1)
+PY
 CMD ["uvicorn", "bolcd.api.app:app", "--host", "0.0.0.0", "--port", "8080"]
