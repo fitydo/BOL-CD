@@ -137,9 +137,40 @@ def main() -> int:
     # For this MVP acceptance, use union for both sets and rely on TR baked in; alerts_reduction will be 0.0 if not available
     gt = load_json(Path(gt_path))
     post = load_json(out_union)
-    # TODO: export pre-TR in future; keeping placeholder if not available
-    pre = {"edges": post.get("edges", [])}
-    pre_is_placeholder = True
+    # Use pre-TR edges if exported; otherwise fall back to post edges
+    if "edges_pre_tr" in post:
+        pre = {"edges": post.get("edges_pre_tr", [])}
+        pre_is_placeholder = False
+    else:
+        pre = {"edges": post.get("edges", [])}
+        pre_is_placeholder = True
+
+    # Expand pre graph to its transitive closure as a naive baseline
+    def _closure(edges_list: list[dict]) -> list[tuple[str, str]]:
+        e = {(d.get("src"), d.get("dst")) for d in edges_list}
+        nodes = list({n for u, v in e for n in (u, v)})
+        idx = {n: i for i, n in enumerate(nodes)}
+        n = len(nodes)
+        reach = [[False] * n for _ in range(n)]
+        for u, v in e:
+            reach[idx[u]][idx[v]] = True
+        for k in range(n):
+            rk = reach[k]
+            for i in range(n):
+                if reach[i][k]:
+                    ri = reach[i]
+                    rik = ri[k]
+                    for j in range(n):
+                        ri[j] = ri[j] or (rik and rk[j])
+        out: list[tuple[str, str]] = []
+        for i, u in enumerate(nodes):
+            for j, v in enumerate(nodes):
+                if reach[i][j]:
+                    out.append((u, v))
+        return out
+
+    pre_closure = _closure(pre.get("edges", []))
+    pre = {"edges": pre_closure}
 
     m = compute_metrics(gt, pre, post)
 
