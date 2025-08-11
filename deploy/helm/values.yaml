@@ -66,6 +66,9 @@ monitor:
   serviceMonitorEnabled: false
   prometheusRelease: prometheus
   scrapeInterval: 30s
+  alertsEnabled: false
+  alerts:
+    p95Ms: 0.1  # 100ms
 
 backup:
   enabled: false

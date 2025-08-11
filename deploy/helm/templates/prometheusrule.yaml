@@ -1,0 +1,31 @@
+{{- if and .Values.monitor.alertsEnabled (has "monitoring.coreos.com/v1" .Capabilities.APIVersions) }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "bolcd.fullname" . }}-alerts
+  labels:
+    app: {{ include "bolcd.name" . }}
+    release: {{ .Values.monitor.prometheusRelease | default "prometheus" | quote }}
+spec:
+  groups:
+    - name: bolcd.slo
+      rules:
+        - alert: BolcdHighLatencyP95
+          expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="{{ include "bolcd.fullname" . }}"}[5m])) by (le)) > {{ .Values.monitor.alerts.p95Ms | default 0.1 }}
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "BOL-CD p95 latency too high"
+            description: "> {{ .Values.monitor.alerts.p95Ms | default 0.1 }}s for 5m"
+        - alert: BolcdBackupFailures
+          expr: increase(kube_job_failed{job=~"kube-state-metrics|kube-state-metrics-kube-state-metrics"}[1d]) > 0
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "BOL-CD backup job failed in last day"
+            description: "Check CronJob logs and PVC/S3 credentials"
+{{- end }}
+
+
