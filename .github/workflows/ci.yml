@@ -13,14 +13,18 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          if [ -f requirements.lock ]; then pip install -r requirements.lock || true; fi
       - name: Unit & Property Tests
         run: pytest -q
       - name: Lint
         run: ruff check .
       - name: Package
         run: python -m build || true
-      - name: Acceptance gate (artifacts if present)
+      - name: Acceptance gate (enforced)
+        env:
+          ACCEPT_ENFORCE: '1'
         run: |
           python scripts/acceptance_check.py
   perf-guard:
@@ -41,7 +45,9 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          if [ -f requirements.lock ]; then pip install -r requirements.lock || true; fi
       - name: Build package (editable)
         run: pip install -e .
       - name: Warmup bench
