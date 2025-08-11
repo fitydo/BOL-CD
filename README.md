@@ -51,6 +51,14 @@ python scripts/fetch_data.py opensearch '{"query":{"match_all":{}},"size":10000}
 
 Note: This script is for development only. Ensure output files under `data/raw/` are excluded from VCS.
 
+### A/B quick report
+
+```bash
+python scripts/ab_report.py --a data/raw/splunk_A_2025-08-11.jsonl --b data/raw/splunk_B_2025-08-11.jsonl \
+  --keys source severity signature rule_name --out-prefix reports/ab_2025-08-11
+```
+`reports/ab_*.json` と `ab_*.md` が出力され、削減率や上位の抑制カテゴリ/回帰を確認できます。
+
 ## Write-back (CLI)
 
 - Dry-run preview (no network):
