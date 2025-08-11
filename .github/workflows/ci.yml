@@ -17,6 +17,8 @@ jobs:
           pip install -r requirements.txt
           if [ -f requirements.lock ]; then pip install -r requirements.lock || true; fi
       - name: Unit & Property Tests
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
         run: pytest -q
       - name: Lint
         run: ruff check .
