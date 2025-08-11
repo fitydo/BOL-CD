@@ -1,0 +1,90 @@
+{{- if and .Values.backup .Values.backup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "bolcd.fullname" . }}-backup
+  labels:
+    app: {{ include "bolcd.name" . }}
+spec:
+  schedule: {{ .Values.backup.schedule | default "0 2 * * *" | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: {{ include "bolcd.name" . }}
+        spec:
+          restartPolicy: OnFailure
+          {{- if .Values.podSecurityContext }}
+          securityContext:
+{{ toYaml .Values.podSecurityContext | indent 12 }}
+          {{- end }}
+          containers:
+            - name: backup
+              {{- if and .Values.backup.pvc .Values.backup.pvc.enabled }}
+              image: {{ .Values.backup.image | default "alpine:3.20" | quote }}
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/sh","-c"]
+              args:
+                - |
+                  set -eo pipefail
+                  TS=$(date +%s)
+                  mkdir -p /backup
+                  tar czf /backup/audit-${TS}.tgz -C /data logs || true
+              volumeMounts:
+                - name: logs
+                  mountPath: /data
+                  readOnly: true
+                - name: backup
+                  mountPath: /backup
+              {{- else if and .Values.backup.s3 .Values.backup.s3.enabled }}
+              image: {{ .Values.backup.image | default "amazon/aws-cli:2.15.0" | quote }}
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.s3.awsSecretName | default "bolcd-backup-aws" | quote }}
+                      key: AWS_ACCESS_KEY_ID
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backup.s3.awsSecretName | default "bolcd-backup-aws" | quote }}
+                      key: AWS_SECRET_ACCESS_KEY
+                - name: AWS_DEFAULT_REGION
+                  value: {{ .Values.backup.s3.region | default "us-east-1" | quote }}
+                {{- if .Values.backup.s3.endpoint }}
+                - name: AWS_ENDPOINT_URL
+                  value: {{ .Values.backup.s3.endpoint | quote }}
+                {{- end }}
+              command: ["/bin/sh","-c"]
+              args:
+                - |
+                  set -eo pipefail
+                  TS=$(date +%s)
+                  mkdir -p /tmp
+                  tar czf /tmp/audit-${TS}.tgz -C /data logs || true
+                  aws s3 cp /tmp/audit-${TS}.tgz s3://{{ .Values.backup.s3.bucket }}/{{ .Values.backup.s3.prefix }}/audit-${TS}.tgz
+              volumeMounts:
+                - name: logs
+                  mountPath: /data
+                  readOnly: true
+              {{- else }}
+              image: "alpine:3.20"
+              command: ["/bin/sh","-c"]
+              args: ["echo Backup disabled; exit 0"]
+              {{- end }}
+          volumes:
+            - name: logs
+              persistentVolumeClaim:
+                claimName: {{ .Values.persistence.logs.existingClaim | default (include "bolcd.fullname" .) }}-logs
+          {{- if and .Values.backup.pvc .Values.backup.pvc.enabled }}
+            - name: backup
+              persistentVolumeClaim:
+                claimName: {{ .Values.backup.pvc.existingClaim | default (include "bolcd.fullname" .) }}-backup
+          {{- end }}
+{{- end }}
+
+

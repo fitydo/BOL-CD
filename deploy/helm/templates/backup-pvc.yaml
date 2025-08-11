@@ -1,0 +1,18 @@
+{{- if and .Values.backup .Values.backup.enabled .Values.backup.pvc .Values.backup.pvc.enabled (not .Values.backup.pvc.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "bolcd.fullname" . }}-backup
+  labels:
+    app: {{ include "bolcd.name" . }}
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: {{ .Values.backup.pvc.size | default "10Gi" }}
+  {{- if .Values.backup.pvc.storageClass }}
+  storageClassName: {{ .Values.backup.pvc.storageClass | quote }}
+  {{- end }}
+{{- end }}
+
+

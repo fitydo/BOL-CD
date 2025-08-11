@@ -67,3 +67,22 @@ monitor:
   prometheusRelease: prometheus
   scrapeInterval: 30s
 
+backup:
+  enabled: false
+  # Option A: copy archives to an extra PVC
+  pvc:
+    enabled: false
+    size: 10Gi
+    storageClass: ""
+    existingClaim: ""
+  # Option B: upload to S3-compatible storage
+  s3:
+    enabled: false
+    bucket: "your-bucket"
+    prefix: "bolcd"
+    region: "us-east-1"
+    endpoint: ""  # optional (e.g., MinIO)
+    awsSecretName: bolcd-backup-aws  # secret with AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY
+  image: "alpine:3.20"
+  schedule: "0 2 * * *"
+

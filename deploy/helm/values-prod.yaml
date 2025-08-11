@@ -123,4 +123,21 @@ monitor:
   prometheusRelease: prometheus
   scrapeInterval: 30s
 
+backup:
+  enabled: false
+  pvc:
+    enabled: false
+    size: 20Gi
+    storageClass: ""
+    existingClaim: ""
+  s3:
+    enabled: false
+    bucket: ""
+    prefix: "bolcd"
+    region: "us-east-1"
+    endpoint: ""
+    awsSecretName: bolcd-backup-aws
+  image: "alpine:3.20"
+  schedule: "0 2 * * *"
+
 
