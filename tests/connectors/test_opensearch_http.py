@@ -40,3 +40,16 @@ def test_opensearch_writeback_puts():
     res = conn.writeback([{"name": "r1"}, {"name": "r2"}])
     assert res["written"] == 2
 
+
+def test_opensearch_detector_validation():
+    conn = OpenSearchConnector("http://os", {"basic": "abc"}, client=MockClient(puts=[MockResp()]))
+    # Valid detector
+    ok = conn.writeback([{ "name": "r1", "detector": {"name": "d1", "rule_index": "bolcd-rules"} }])
+    assert ok["written"] == 1
+    # Invalid detector type
+    try:
+        conn.writeback([{ "name": "bad", "detector": 123 }])
+        assert False, "expected ValueError"
+    except ValueError:
+        pass
+

@@ -44,6 +44,15 @@ class OpenSearchConnector:
         # Minimal validation
         if not rule.get("name"):
             raise ValueError("rule missing name")
+        # If a detector block is present, check essential keys
+        detector = rule.get("detector")
+        if detector is not None:
+            if not isinstance(detector, dict):
+                raise ValueError("detector must be an object")
+            if "name" not in detector or not detector["name"]:
+                raise ValueError("detector.name required")
+            if "rule_index" in detector and not isinstance(detector["rule_index"], str):
+                raise ValueError("detector.rule_index must be string")
 
     def writeback(self, rules: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Index rules into bolcd-rules index (idempotent by name). Optionally create detector stub."""
