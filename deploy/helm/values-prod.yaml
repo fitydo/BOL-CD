@@ -143,4 +143,15 @@ backup:
   image: "alpine:3.20"
   schedule: "0 2 * * *"
 
+cron:
+  recompute:
+    enabled: true
+    schedule: "0 3 * * *"
+    operatorApiKeySecret:
+      name: bolcd-apikeys
+      key: BOLCD_API_KEYS
+    # Secret には複数キーが入るため、OPキーは `testop` 等に合わせて上書き可能
+    operatorApiKey: "testop"
+    body: "{}"
+
 

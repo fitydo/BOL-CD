@@ -1,0 +1,50 @@
+{{- if .Values.cron.recompute.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "bolcd.fullname" . }}-recompute
+  labels:
+    app: {{ include "bolcd.name" . }}
+spec:
+  schedule: {{ .Values.cron.recompute.schedule | default "0 3 * * *" | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: {{ include "bolcd.name" . }}
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: curl
+              image: curlimages/curl:8.7.1
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: BASE
+                  value: "http://{{ include "bolcd.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}"
+                - name: BODY
+                  value: {{ .Values.cron.recompute.body | default "{}" | quote }}
+                {{- if and .Values.cron.recompute.operatorApiKeySecret .Values.cron.recompute.operatorApiKeySecret.name .Values.cron.recompute.operatorApiKeySecret.key }}
+                - name: OP_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.cron.recompute.operatorApiKeySecret.name | quote }}
+                      key: {{ .Values.cron.recompute.operatorApiKeySecret.key | quote }}
+                {{- else }}
+                - name: OP_KEY
+                  value: {{ .Values.cron.recompute.operatorApiKey | default "testop" | quote }}
+                {{- end }}
+              command: ["/bin/sh","-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  curl -sS -X POST \
+                    -H 'Content-Type: application/json' \
+                    -H "X-API-Key: ${OP_KEY}" \
+                    "${BASE}/api/edges/recompute" \
+                    -d "${BODY}"
+{{- end }}
+
+

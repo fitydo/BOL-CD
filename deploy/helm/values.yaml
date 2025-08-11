@@ -89,3 +89,17 @@ backup:
   image: "alpine:3.20"
   schedule: "0 2 * * *"
 
+cron:
+  recompute:
+    enabled: false
+    # 例: 03:00 に実行
+    schedule: "0 3 * * *"
+    # operator キーの Secret を使う場合
+    operatorApiKeySecret:
+      name: ""
+      key: ""
+    # もしくは値で直指定（開発用）
+    operatorApiKey: ""
+    # リクエストボディ（必要なら events_path/persist_dir/epsilon 等を指定）
+    body: "{}"
+
