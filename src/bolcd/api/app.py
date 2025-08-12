@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 
 import yaml
 from fastapi import Depends, FastAPI, Request
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from prometheus_client import CONTENT_TYPE_LATEST, CollectorRegistry, Counter, Gauge, generate_latest
 
@@ -81,6 +82,12 @@ async def readyz() -> Dict[str, str]:
 @app.get("/metrics")
 async def metrics() -> Any:
     return generate_latest(REGISTRY), 200, {"Content-Type": CONTENT_TYPE_LATEST}
+
+
+@app.get("/")
+async def root() -> RedirectResponse:
+    # Redirect to the minimal dashboard for convenience
+    return RedirectResponse(url="/dashboard")
 
 
 @app.post("/api/encode", response_model=EncodeResponse)
