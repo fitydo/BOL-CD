@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Iterable, List, Optional
+import os
 
 try:
     import httpx  # type: ignore
@@ -14,7 +15,17 @@ class SplunkConnector:
         self.token = token
         self.timeout = timeout
         self.retries = retries
-        self.client = client or (httpx and httpx.Client(timeout=timeout))
+        if client is not None:
+            self.client = client
+        else:
+            verify = True
+            try:
+                # Dev-only toggle to skip TLS verification (self-signed certs)
+                v = os.getenv("BOLCD_SPLUNK_VERIFY", "1").strip()
+                verify = v not in {"0", "false", "False"}
+            except Exception:
+                verify = True
+            self.client = httpx and httpx.Client(timeout=timeout, verify=verify)
 
     def _auth_headers(self) -> Dict[str, str]:
         return {"Authorization": f"Splunk {self.token}"}
