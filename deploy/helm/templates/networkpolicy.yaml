@@ -28,6 +28,33 @@ spec:
         - protocol: TCP
           port: {{ .Values.service.port }}
   egress:
+    # Allow egress to same-namespace bolcd Service (port service.port)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Release.Namespace }}
+          podSelector:
+            matchLabels:
+              app: {{ include "bolcd.name" . }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.port }}
+
+    # Allow DNS to kube-dns (TCP/UDP 53)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+    # Allow external HTTP/HTTPS egress (e.g., cloud APIs)
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0
