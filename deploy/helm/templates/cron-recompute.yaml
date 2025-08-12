@@ -23,7 +23,7 @@ spec:
               imagePullPolicy: IfNotPresent
               env:
                 - name: BASE
-                  value: "http://{{ include "bolcd.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}"
+                  value: "http://{{ include "bolcd.fullname" . }}:{{ .Values.service.port }}"
                 - name: BODY
                   value: {{ .Values.cron.recompute.body | default "{}" | quote }}
                 {{- if and .Values.cron.recompute.operatorApiKeySecret .Values.cron.recompute.operatorApiKeySecret.name .Values.cron.recompute.operatorApiKeySecret.key }}
@@ -40,7 +40,7 @@ spec:
               args:
                 - |
                   set -euo pipefail
-                  curl -sS -X POST \
+                  curl --retry 3 --retry-connrefused --retry-delay 2 -sS -X POST \
                     -H 'Content-Type: application/json' \
                     -H "X-API-Key: ${OP_KEY}" \
                     "${BASE}/api/edges/recompute" \
