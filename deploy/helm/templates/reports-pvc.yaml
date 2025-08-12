@@ -1,0 +1,18 @@
+{{- if and .Values.reportsPVC .Values.reportsPVC.enabled (not .Values.reportsPVC.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "bolcd.fullname" . }}-reports
+  labels:
+    app: {{ include "bolcd.name" . }}
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: {{ .Values.reportsPVC.size | default "2Gi" }}
+  {{- if .Values.reportsPVC.storageClass }}
+  storageClassName: {{ .Values.reportsPVC.storageClass | quote }}
+  {{- end }}
+{{- end }}
+
+

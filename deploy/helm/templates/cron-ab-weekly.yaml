@@ -1,0 +1,45 @@
+{{- if .Values.cron.abWeekly.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "bolcd.fullname" . }}-ab-weekly
+  labels:
+    app: {{ include "bolcd.name" . }}
+spec:
+  schedule: {{ .Values.cron.abWeekly.schedule | default "0 4 * * 1" | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: {{ include "bolcd.name" . }}
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: python
+              image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/sh","-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  python scripts/ab_weekly.py \
+                    --prefix-a {{ .Values.cron.abWeekly.prefixA | default "data/raw/splunk_A_" }} \
+                    --prefix-b {{ .Values.cron.abWeekly.prefixB | default "data/raw/splunk_B_" }} \
+                    --out-prefix /reports/ab_weekly_$(date +%F)
+              volumeMounts:
+                - name: reports
+                  mountPath: /reports
+          volumes:
+            - name: reports
+              {{- if .Values.reportsPVC.enabled }}
+              persistentVolumeClaim:
+                claimName: {{ .Values.reportsPVC.existingClaim | default (include "bolcd.fullname" .) }}-reports
+              {{- else }}
+              emptyDir: {}
+              {{- end }}
+{{- end }}
+
+

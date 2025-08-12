@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY pyproject.toml README.md ./
 COPY api ./api
 COPY configs ./configs
+COPY scripts ./scripts
 COPY src ./src
 
 # Runtime image

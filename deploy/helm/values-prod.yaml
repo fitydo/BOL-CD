@@ -154,4 +154,16 @@ cron:
     operatorApiKey: "testop"
     body: "{}"
 
+  abWeekly:
+    enabled: true
+    schedule: "0 4 * * 1"
+    prefixA: "data/raw/splunk_A_"
+    prefixB: "data/raw/splunk_B_"
+
+reportsPVC:
+  enabled: true
+  size: 5Gi
+  storageClass: ""
+  existingClaim: ""
+
 
