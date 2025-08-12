@@ -7,7 +7,13 @@ import os
 from pathlib import Path
 from typing import Iterable, Dict, Any
 
-from bolcd.connectors.factory import make_connector
+try:
+    from bolcd.connectors.factory import make_connector
+except Exception:  # allow dev use without editable install
+    import sys
+    from pathlib import Path as _P
+    sys.path.append(str(_P(__file__).resolve().parents[1] / "src"))
+    from bolcd.connectors.factory import make_connector
 
 
 def write_jsonl(path: Path, rows: Iterable[Dict[str, Any]]) -> int:
