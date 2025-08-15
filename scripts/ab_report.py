@@ -34,11 +34,28 @@ DEFAULT_EXCLUDE = {
 }
 
 
+def _norm(v: Any) -> Any:
+    try:
+        if isinstance(v, dict):
+            return tuple(sorted((k, _norm(vv)) for k, vv in v.items()))
+        if isinstance(v, (list, tuple, set)):
+            return tuple(_norm(x) for x in v)
+        # basic hashable types are fine
+        hash(v)  # may raise TypeError
+        return v
+    except Exception:
+        # fallback to string for any unhashable/complex object
+        try:
+            return json.dumps(v, sort_keys=True, ensure_ascii=False)
+        except Exception:
+            return str(v)
+
+
 def make_signature(row: Dict[str, Any], keys: Sequence[str] | None) -> Tuple:
     if keys:
-        items = [(k, row.get(k)) for k in keys]
+        items = [(k, _norm(row.get(k))) for k in keys]
     else:
-        items = sorted((k, v) for k, v in row.items() if k not in DEFAULT_EXCLUDE)
+        items = sorted((k, _norm(v)) for k, v in row.items() if k not in DEFAULT_EXCLUDE)
     return tuple(items)
 
 
@@ -91,6 +108,8 @@ def summarize(a_rows: Iterable[Dict[str, Any]], b_rows: Iterable[Dict[str, Any]]
             "reduction_by_unique": round(reduction_by_unique, 4),
             "suppressed_count": suppressed_count,
             "suppressed_unique": len(suppressed_sigs),
+            "new_in_b_unique": len(new_in_b),
+            "new_in_b_count": sum(it["count"] for it in new_in_b),
         },
         "top": {
             "suppressed": top_suppressed[:20],

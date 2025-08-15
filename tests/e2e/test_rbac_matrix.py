@@ -26,7 +26,9 @@ def test_operator_can_recompute_and_writeback(tmp_path):
     r = c.post("/api/edges/recompute", headers={"X-API-Key": "testop"}, json={"events_path": str(sample)})
     assert r.status_code == 200
     r2 = c.post("/api/siem/writeback", headers={"X-API-Key": "testop"}, json={"target": "splunk", "rules": []})
-    assert r2.status_code in (200, 400)
+    assert r2.status_code == 403
+    r3 = c.post("/api/siem/writeback", headers={"X-API-Key": "adminkey"}, json={"target": "splunk", "rules": []})
+    assert r3.status_code in (200, 400)
 
 
 def test_viewer_can_read_audit():

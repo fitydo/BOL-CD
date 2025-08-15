@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "bolcd.fullname" . }}-test
+  labels:
+    app: {{ include "bolcd.name" . }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: curl
+      image: curlimages/curl:8.7.1
+      imagePullPolicy: IfNotPresent
+      env:
+        - name: BASE
+          value: "http://{{ include "bolcd.fullname" . }}:{{ .Values.service.port }}"
+      command: ["/bin/sh","-c"]
+      args:
+        - |
+          set -euo pipefail
+          echo "GET ${BASE}/readyz" && curl -fsS "${BASE}/readyz" | tee /dev/stderr
+          echo "GET ${BASE}/metrics" && curl -fsS --max-time 5 "${BASE}/metrics" | head -n 1 | tee /dev/stderr
+          echo "OK"
+
+

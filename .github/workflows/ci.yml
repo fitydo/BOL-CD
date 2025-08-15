@@ -1,4 +1,193 @@
 name: ci
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+jobs:
+  lint-test:
+    name: Lint and Test (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff pytest
+
+      - name: Ruff (lint)
+        run: ruff check .
+
+      - name: Pytest
+        run: pytest -q
+
+      - name: Schemathesis (ASGI fuzz tests)
+        run: |
+          pip install schemathesis
+          schemathesis run api/openapi.yaml \
+            --asgi-app=bolcd.api.app:app \
+            --checks all \
+            --hypothesis-deadline=None \
+            --hypothesis-max-examples=50
+
+  helm-lint:
+    name: Helm Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      - name: Helm Lint Chart
+        run: |
+          if [ -d deploy/helm ]; then helm lint deploy/helm; else echo 'No helm chart'; fi
+
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz | sudo tar -xz -C /usr/local/bin kubeconform
+
+      - name: Validate rendered manifests with kubeconform
+        run: |
+          if [ -d deploy/helm ]; then \
+            helm template bolcd deploy/helm -f deploy/helm/values.yaml -f deploy/helm/values-prod.yaml \
+              | kubeconform -strict -ignore-missing-schemas \
+                -skip CustomResourceDefinition \
+                -skip "Kustomization" \
+                -skip "ExternalSecret" \
+                -skip "SecretStore" \
+                -skip "ClusterSecretStore" \
+                -skip "ServiceMonitor" \
+                -skip "PrometheusRule"; \
+          else \
+            echo 'No helm chart'; \
+          fi
+
+  docker-build:
+    name: Build (and optionally push) Docker image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker login to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build (and push if on push) image
+        run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/bol-cd"
+          TAG="${GITHUB_SHA::7}"
+          if [ -f Dockerfile ]; then \
+            docker buildx build \
+              --platform linux/amd64 \
+              -t "$IMAGE:$TAG" -t "$IMAGE:latest" \
+              --push=$([ "${{ github.event_name }}" = push ] && echo true || echo false) \
+              . ; \
+          else \
+            echo 'No Dockerfile found, skipping build'; \
+          fi
+
+      - name: Install cosign
+        if: github.event_name == 'push'
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign image with cosign (keyless)
+        if: github.event_name == 'push'
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/bol-cd"
+          TAG="${GITHUB_SHA::7}"
+          cosign sign --yes "$IMAGE:$TAG"
+          cosign sign --yes "$IMAGE:latest"
+
+      - name: Install syft (SBOM)
+        uses: anchore/sbom-action/download-syft@v0.17.7
+
+      - name: Generate SBOM (CycloneDX JSON)
+        run: |
+          syft packages . -o cyclonedx-json > sbom.json
+          echo "SBOM generated at sbom.json"
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx
+          path: sbom.json
+
+      - name: Attach SBOM to image (cosign attach)
+        if: github.event_name == 'push'
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          IMAGE="ghcr.io/${{ github.repository_owner }}/bol-cd"
+          TAG="${GITHUB_SHA::7}"
+          cosign attach sbom --sbom sbom.json "$IMAGE:$TAG"
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          pip install -r requirements.txt
+      - name: Lint (ruff)
+        run: ruff check .
+      - name: Test (pytest)
+        run: pytest -q
+      - name: Helm lint
+        uses: azure/setup-helm@v4
+      - name: Lint chart
+        run: helm lint deploy/helm
+
+name: ci
 on:
   push:
     branches: [ main ]

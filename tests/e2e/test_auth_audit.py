@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import os
+import pytest
 from fastapi.testclient import TestClient
 
 from bolcd.api.app import app
 
+
+@pytest.fixture(autouse=True)
+def _clear_keys_env(monkeypatch):
+    # Ensure open mode for this module (no key mapping configured)
+    monkeypatch.delenv("BOLCD_API_KEYS", raising=False)
 
 def test_forbidden_without_key():
     client = TestClient(app)

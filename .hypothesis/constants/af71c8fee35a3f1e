@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/connectors/splunk.py
+# hypothesis_version: 6.138.0
+
+[30.0, 200, 10000, '/', '0', '1', 'Authorization', 'BOLCD_SPLUNK_APP', 'BOLCD_SPLUNK_OWNER', 'BOLCD_SPLUNK_VERIFY', 'False', 'app', 'bolcd_rule', 'false', 'index=main | head 1', 'json', 'name', 'next_offset', 'nobody', 'offset', 'ok', 'output_mode', 'owner', 'query', 'result', 'results', 'search', 'skipped', 'spl', 'status', 'written']

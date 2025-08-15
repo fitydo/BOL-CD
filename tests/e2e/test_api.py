@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+import os
 from fastapi.testclient import TestClient
 
 from bolcd.api.app import app
@@ -9,6 +10,12 @@ from bolcd.api.app import app
 @pytest.fixture(scope="module")
 def client():
     return TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def _keys_env():
+    os.environ["BOLCD_API_KEYS"] = "view:viewER,testop:operator,admin:admin"
+    yield
 
 
 def test_health(client: TestClient):
@@ -40,10 +47,18 @@ def test_recompute_and_graph(client: TestClient, tmp_path):
     assert r2.status_code == 200 and "<graphml" in r2.text
 
 
-def test_writeback_dry_run(client: TestClient):
+def test_writeback_rbac(client: TestClient):
+    # operator cannot writeback
     r = client.post(
         "/api/siem/writeback",
         headers={"X-API-Key": "testop"},
         json={"target": "splunk", "rules": [{"name": "r1", "spl": "index=main | head 1"}]},
     )
-    assert r.status_code == 200 and r.json()["status"] in ("dry-run", "ok")
+    assert r.status_code == 403
+    # admin can dry-run
+    r2 = client.post(
+        "/api/siem/writeback",
+        headers={"X-API-Key": "admin"},
+        json={"target": "splunk", "rules": [{"name": "r1", "spl": "index=main | head 1"}]},
+    )
+    assert r2.status_code == 200 and r2.json()["status"] in ("dry-run", "ok")

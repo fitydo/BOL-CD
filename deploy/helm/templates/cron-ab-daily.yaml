@@ -1,0 +1,90 @@
+{{- if .Values.cron.abDaily.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "bolcd.fullname" . }}-ab-daily
+  labels:
+    app: {{ include "bolcd.name" . }}
+spec:
+  schedule: {{ .Values.cron.abDaily.schedule | default "5 1 * * *" | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: {{ include "bolcd.name" . }}
+        spec:
+          serviceAccountName: {{ include "bolcd.jobsServiceAccountName" . }}
+          restartPolicy: OnFailure
+          containers:
+            - name: ab-daily
+              image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: INDEX
+                  value: {{ .Values.cron.abDaily.splunk.index | default "_internal" | quote }}
+                - name: HOURS
+                  value: {{ .Values.cron.abDaily.hours | default 24 | quote }}
+                - name: B_EXCLUDE
+                  value: {{ .Values.cron.abDaily.splunk.exclude | default "sourcetype=splunkd*" | quote }}
+                - name: OUT_DIR
+                  value: "/reports/raw"
+                {{- if .Values.secretEnv }}
+                {{- range .Values.secretEnv }}
+                - name: {{ .name | quote }}
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .secretName | quote }}
+                      key: {{ .secretKey | quote }}
+                {{- end }}
+                {{- end }}
+              command: ["/bin/sh","-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  : "${BOLCD_SPLUNK_URL:?missing}"
+                  : "${BOLCD_SPLUNK_TOKEN:?missing}"
+                  mkdir -p "${OUT_DIR}"
+                  D=$(date +%F)
+                  echo "[A] collecting ${HOURS}h from index=${INDEX}"
+                  i=${HOURS}
+                  while [ "$i" -ge 1 ]; do
+                    FROM="${i}h"; TO="$((i-1))h"
+                    OUT_A="${OUT_DIR}/splunk_A_${D}_${FROM}_${TO}.jsonl"
+                    echo "  A ${FROM}..${TO} -> ${OUT_A}"
+                    python scripts/fetch_data.py splunk "index=${INDEX} earliest=-${FROM} latest=-${TO} | fields *" --out "${OUT_A}" || true
+                    i=$((i-1))
+                  done
+                  echo "[B] collecting with exclude: ${B_EXCLUDE}"
+                  i=${HOURS}
+                  while [ "$i" -ge 1 ]; do
+                    FROM="${i}h"; TO="$((i-1))h"
+                    OUT_B="${OUT_DIR}/splunk_B_${D}_${FROM}_${TO}.jsonl"
+                    echo "  B ${FROM}..${TO} -> ${OUT_B}"
+                    python scripts/fetch_data.py splunk "index=${INDEX} earliest=-${FROM} latest=-${TO} NOT ${B_EXCLUDE} | fields *" --out "${OUT_B}" || true
+                    i=$((i-1))
+                  done
+                  cat "${OUT_DIR}/splunk_A_${D}_"*.jsonl > "${OUT_DIR}/splunk_A_${D}.jsonl" || true
+                  cat "${OUT_DIR}/splunk_B_${D}_"*.jsonl > "${OUT_DIR}/splunk_B_${D}.jsonl" || true
+                  echo "[report] writing /reports/ab_${D}.*"
+                  python scripts/ab_report.py \
+                    --a "${OUT_DIR}/splunk_A_${D}.jsonl" \
+                    --b "${OUT_DIR}/splunk_B_${D}.jsonl" \
+                    --out-prefix "/reports/ab_${D}"{{- if .Values.cron.abDaily.keys }} \
+                    --keys {{ join " " .Values.cron.abDaily.keys }}{{- end }}
+              volumeMounts:
+                - name: reports
+                  mountPath: /reports
+          volumes:
+            - name: reports
+              {{- if .Values.reportsPVC.enabled }}
+              persistentVolumeClaim:
+                claimName: {{ .Values.reportsPVC.existingClaim | default (include "bolcd.fullname" .) }}-reports
+              {{- else }}
+              emptyDir: {}
+              {{- end }}
+{{- end }}
+
+

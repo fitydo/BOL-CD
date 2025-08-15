@@ -1,0 +1,60 @@
+{{- if .Values.monitor.grafana.enabled }}
+{{- $job := include "bolcd.fullname" . -}}
+{{- $exprLatency := printf "histogram_quantile(0.95, sum(rate(bolcd_http_request_duration_seconds_bucket{job=\"%s\"}[5m])) by (le))" $job -}}
+{{- $exprErr5 := printf "sum(rate(bolcd_http_requests_total{job=\"%s\",code=~\"5..\"}[5m])) / sum(rate(bolcd_http_requests_total{job=\"%s\"}[5m]))" $job $job -}}
+{{- $exprErr4 := printf "sum(rate(bolcd_http_requests_total{job=\"%s\",code=~\"4..\"}[5m])) / sum(rate(bolcd_http_requests_total{job=\"%s\"}[5m]))" $job $job -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bolcd.fullname" . }}-grafana-dashboard
+  labels:
+    app: {{ include "bolcd.name" . }}
+    grafana_dashboard: "1"
+  {{- if .Values.monitor.grafana.folder }}
+  annotations:
+    grafana_folder: {{ .Values.monitor.grafana.folder | quote }}
+  {{- end }}
+data:
+  bolcd-dashboard.json: |
+    {
+      "title": "BOL-CD Overview",
+      "schemaVersion": 36,
+      "version": 1,
+      "time": {"from": "now-6h", "to": "now"},
+      "templating": {"list": []},
+      "panels": [
+        {
+          "type": "timeseries",
+          "title": "p95 latency (s)",
+          "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+          "targets": [
+            {"expr": {{ $exprLatency | toJson }}, "refId": "A"}
+          ],
+          "options": {"legend": {"displayMode": "list"}}
+        },
+        {
+          "type": "timeseries",
+          "title": "HTTP error rates",
+          "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+          "targets": [
+            {"expr": {{ $exprErr5 | toJson }}, "refId": "A"},
+            {"expr": {{ $exprErr4 | toJson }}, "refId": "B"}
+          ],
+          "options": {"legend": {"displayMode": "table"}}
+        },
+        {
+          "type": "timeseries",
+          "title": "A/B metrics",
+          "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+          "targets": [
+            {"expr": "bolcd_ab_reduction_by_count", "refId": "A"},
+            {"expr": "bolcd_ab_new_in_b_unique", "refId": "B"},
+            {"expr": "bolcd_ab_new_in_b_count", "refId": "C"}
+          ],
+          "options": {"legend": {"displayMode": "list"}}
+        }
+      ]
+    }
+{{- end }}
+
+

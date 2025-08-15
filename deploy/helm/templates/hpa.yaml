@@ -19,6 +19,10 @@ spec:
         target:
           type: Utilization
           averageUtilization: {{ .Values.hpa.targetCPUUtilizationPercentage | default 70 }}
+  {{- if .Values.hpa.behavior }}
+  behavior:
+{{ toYaml .Values.hpa.behavior | indent 4 }}
+  {{- end }}
 {{- end }}
 
 

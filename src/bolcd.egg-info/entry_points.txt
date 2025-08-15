@@ -1,2 +1,4 @@
 [console_scripts]
+bolcd-bench = bolcd.cli.bench:main
 bolcd-recompute = bolcd.cli.recompute:main
+bolcd-writeback = bolcd.cli.writeback:main

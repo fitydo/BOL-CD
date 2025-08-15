@@ -1,4 +1,4 @@
-# BOL-CD (ChainLite) — v0.2.0
+# BOL-CD (ChainLite) — v1.0.0
 
 Implements core algorithms and a FastAPI service per `docs/design.md` and `api/openapi.yaml`.
 
@@ -80,6 +80,7 @@ CSV と Markdown を `reports/` に出力します。
   ```
 - Apply (requires env vars):
   - Splunk: `BOLCD_SPLUNK_URL`, `BOLCD_SPLUNK_TOKEN`
+    - Optional scope: `BOLCD_SPLUNK_APP` (default `search`), `BOLCD_SPLUNK_OWNER` (default `nobody`)
   - Sentinel: `BOLCD_AZURE_TOKEN`, `BOLCD_AZURE_SUBSCRIPTION_ID`, `BOLCD_AZURE_RESOURCE_GROUP`, `BOLCD_AZURE_WORKSPACE_NAME`, `BOLCD_SENTINEL_WORKSPACE_ID`
   - OpenSearch: `BOLCD_OPENSEARCH_ENDPOINT`, `BOLCD_OPENSEARCH_BASIC`
 
@@ -94,8 +95,22 @@ CSV と Markdown を `reports/` に出力します。
   ```json
   { "target": "splunk", "rules": [{"name":"BOLCD Test", "spl":"index=main | head 1"}], "dry_run": true }
   ```
+  - Roles: `admin` only（`X-API-Key`の`admin`が必要）
+  - Splunk saved search のスコープ: 環境変数で `BOLCD_SPLUNK_APP`/`BOLCD_SPLUNK_OWNER` を指定可能。ルール個別にも`{"app":"search","owner":"nobody"}`で上書き可能。
 - Metrics: GET `/metrics`
+- Daily AB metrics: `bolcd_ab_reduction_by_count`, `bolcd_ab_reduction_by_unique`, `bolcd_ab_suppressed_count`, `bolcd_ab_new_in_b_unique`, `bolcd_ab_new_in_b_count`, `bolcd_ab_last_file_mtime`
 - RBAC: add `X-API-Key` header after exporting `BOLCD_API_KEYS="key1:viewer,key2:operator,key3:admin"`
+
+### Rules CRUD & GitOps
+
+- Storage: `configs/rules.json`（`BOLCD_CONFIG_DIR`で上書き可）
+- Endpoints:
+  - GET `/api/rules` / `/api/rules/{name}`（viewer）
+  - POST `/api/rules`、PUT `/api/rules/{name}`、DELETE `/api/rules/{name}`（admin）
+  - POST `/api/rules/apply`（admin、`{"target":"splunk","names":["rule1"],"dry_run":true}`）
+  - POST `/api/rules/gitops`（admin）: ルールをPR化
+    - 環境変数: `BOLCD_GITHUB_REPO=owner/repo`, `BOLCD_GITHUB_TOKEN=<PAT>`, 任意`BOLCD_GITOPS_BASE_BRANCH=main`
+
 
 ## Benchmark
 
@@ -126,7 +141,32 @@ CSV と Markdown を `reports/` に出力します。
 - Optional:
   - Persistent audit logs: set `persistence.logs.enabled: true`
   - Secret-based API keys: set `apiKeysSecret.enabled: true`
-  - Prometheus: set `monitor.serviceMonitorEnabled: true` when CRD exists（本番では既定で有効化）
+- Prometheus: set `monitor.serviceMonitorEnabled: true` when CRD exists（本番では既定で有効化）
+  - Alerts: set `monitor.alertsEnabled: true` to create `PrometheusRule`
+  - Thresholds:
+    - `monitor.alerts.p95Ms` (default `0.1` seconds)
+    - `monitor.alerts.http.errorRate5xx` (default `0.01`)
+    - `monitor.alerts.http.errorRate4xx` (default `0.05`)
+    - `monitor.alerts.http.errorRate429` (default `0.02`)
+    - `monitor.alerts.rateLimit.enabled` / `monitor.alerts.rateLimit.increase5m`
+  - Metrics used:
+    - Latency: `bolcd_http_request_duration_seconds_bucket` with p95
+    - Error rate: `bolcd_http_requests_total` by `code`
+  - Grafana dashboard (optional): set `monitor.grafana.enabled: true` to create a ConfigMap labeled `grafana_dashboard: "1"` (folder via `monitor.grafana.folder`)
   - Ingress metrics: set `ingress.exposeMetrics: true`
+  - Daily report notification: set `cron.abNotify.enabled: true` and create secret `bolcd-notify` with key `webhook`
+  - ExternalSecrets: set `externalSecrets.enabled: true` and configure `secretStoreRef`/`data` to sync `bolcd-secrets`
+
+### Daily A/B report notification (Slack/Webhook)
+
+```
+kubectl create secret generic bolcd-notify \
+  --from-literal=webhook='https://hooks.slack.com/services/XXX/YYY/ZZZ' \
+  -n <namespace>
+
+helm upgrade --install bolcd ./deploy/helm -n <namespace> -f deploy/helm/values-prod.yaml --wait
+```
+
+CronJob `bolcd-ab-notify` will post the latest `/reports/ab_$(date +%F)_keys.md` (fallback: `ab_$(date +%F).md`).
 
 Endpoints are under `/api/*` (see `api/openapi.yaml`).

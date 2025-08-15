@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/fitydo/bol-cd
-  tag: sha-6cc6cec
+  tag: sha-eecf43
   pullPolicy: IfNotPresent
 
 replicaCount: 2
@@ -10,7 +10,20 @@ service:
   port: 8080
 
 env:
-  BOLCD_API_KEYS: "view:viewer,testop:operator"
+  BOLCD_API_KEYS: "view:viewer,testop:operator,admin:admin"
+  # OIDC (optional)
+  # BOLCD_OIDC_ISS: "https://issuer.example.com/"
+  # BOLCD_OIDC_AUD: "bolcd-api"
+  # BOLCD_OIDC_JWKS: "https://issuer.example.com/.well-known/jwks.json"
+  # CORS
+  BOLCD_CORS_ORIGINS: "https://console.example.com"
+  # Rate limit
+  BOLCD_RATE_LIMIT_ENABLED: "1"
+  BOLCD_RATE_LIMIT_RPS: "20"
+  BOLCD_RATE_LIMIT_BURST: "40"
+  # HTTPS/HSTS
+  BOLCD_REQUIRE_HTTPS: "0"
+  BOLCD_HSTS_ENABLED: "1"
 
 # Optional plain env vars
 envVars:
@@ -18,7 +31,7 @@ envVars:
     value: /app/src
 
 apiKeysSecret:
-  enabled: false
+  enabled: true
   name: bolcd-apikeys
   key: BOLCD_API_KEYS
 
@@ -79,6 +92,12 @@ ingress:
   className: nginx
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Ingress-level rate limiting (complements app-side)
+    nginx.ingress.kubernetes.io/limit-rps: "20"
+    nginx.ingress.kubernetes.io/limit-burst: "40"
   hosts:
     - host: bolcd.example.com
   exposeMetrics: false
@@ -96,6 +115,19 @@ hpa:
   minReplicas: 2
   maxReplicas: 5
   targetCPUUtilizationPercentage: 70
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 60
 
 pdb:
   enabled: true
@@ -103,8 +135,13 @@ pdb:
 
 networkPolicy:
   enabled: true
-  # Optional: block everywhere and open to specific CIDRs
+  # Allow from specific CIDRs (e.g., corporate ranges) and namespaces (e.g., ingress-nginx, monitoring)
   ingressFromCIDRs: []
+  allowFromNamespaces:
+    - ingress-nginx
+    - bolcd-prod2
+    - monitoring
+    - prometheus
 
 logs:
   emptyDir: true
@@ -125,11 +162,26 @@ monitor:
   alertsEnabled: true
   alerts:
     p95Ms: 0.1
+    ab:
+      minReductionDrop: 0.4
+      maxNewInBUnique: 500
+      maxNewInBCount: 5000
+      maxStaleSeconds: 21600
+
+  grafana:
+    enabled: true
+    folder: "Observability"
+  alertmanager:
+    enabled: true
+    slack:
+      secretName: alertmanager-slack
+      key: webhook
+      channel: "#soc-alerts"
 
 backup:
-  enabled: true
+  enabled: false
   pvc:
-    enabled: true
+    enabled: false
     size: 20Gi
     storageClass: ""
     existingClaim: ""
@@ -148,22 +200,92 @@ cron:
     enabled: true
     schedule: "0 3 * * *"
     operatorApiKeySecret:
-      name: bolcd-apikeys
-      key: BOLCD_API_KEYS
-    # Secret には複数キーが入るため、OPキーは `testop` 等に合わせて上書き可能
-    operatorApiKey: "testop"
+      name: bolcd-operator-key
+      key: key
+    # fallback（未使用想定）
+    operatorApiKey: ""
     body: "{}"
 
   abWeekly:
     enabled: true
     schedule: "0 4 * * 1"
-    prefixA: "data/raw/splunk_A_"
-    prefixB: "data/raw/splunk_B_"
+    prefixA: "/reports/raw/splunk_A_"
+    prefixB: "/reports/raw/splunk_B_"
+    # 日次と同じキーで週次も安定化
+    keys: ["host", "index", "sourcetype", "source", "component", "group"]
+
+  abDaily:
+    enabled: true
+    schedule: "5 1 * * *"
+    hours: 24
+    # 集計のキーを限定して、uniqueの安定性を高める
+    keys: ["host", "index", "sourcetype", "source", "component", "group"]
+    splunk:
+      index: "_internal"
+      exclude: "sourcetype=splunkd*"
+
+  abNotify:
+    enabled: true
+    schedule: "15 7 * * *"
+    webhookSecret:
+      name: "bolcd-notify"
+      key: "webhook"
+
+  cleanup:
+    enabled: true
+    schedule: "30 3 * * *"
+    keepDays: 14
 
 reportsPVC:
   enabled: true
   size: 5Gi
   storageClass: ""
   existingClaim: ""
+
+externalSecrets:
+  enabled: true
+  secretStoreRef:
+    # Switch to the in-namespace SecretStore that references Vault
+    name: prod-store
+    kind: SecretStore
+  targetName: bolcd-secrets
+  refreshInterval: 1h
+  data:
+    - secretKey: splunk_url
+      remoteRef:
+        key: bolcd
+        property: splunk_url
+    - secretKey: splunk_token
+      remoteRef:
+        key: bolcd
+        property: splunk_token
+    - secretKey: sentinel_workspace_id
+      remoteRef:
+        key: bolcd
+        property: sentinel_workspace_id
+    - secretKey: azure_token
+      remoteRef:
+        key: bolcd
+        property: azure_token
+    - secretKey: azure_subscription_id
+      remoteRef:
+        key: bolcd
+        property: azure_subscription_id
+    - secretKey: azure_resource_group
+      remoteRef:
+        key: bolcd
+        property: azure_resource_group
+    - secretKey: azure_workspace_name
+      remoteRef:
+        key: bolcd
+        property: azure_workspace_name
+    - secretKey: opensearch_endpoint
+      remoteRef:
+        key: bolcd
+        property: opensearch_endpoint
+    - secretKey: opensearch_basic
+      remoteRef:
+        key: bolcd
+        property: opensearch_basic
 
 

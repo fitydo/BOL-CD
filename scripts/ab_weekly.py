@@ -34,11 +34,21 @@ DEFAULT_EXCLUDE = {
 }
 
 
+def _make_hashable(value: Any) -> Any:
+    if isinstance(value, dict):
+        return tuple(sorted((k, _make_hashable(v)) for k, v in value.items()))
+    if isinstance(value, list):
+        return tuple(_make_hashable(v) for v in value)
+    if isinstance(value, (set, tuple)):
+        return tuple(_make_hashable(v) for v in value)
+    return value
+
+
 def make_signature(row: Dict[str, Any], keys: Sequence[str] | None) -> Tuple:
     if keys:
-        items = [(k, row.get(k)) for k in keys]
+        items = [(k, _make_hashable(row.get(k))) for k in keys]
     else:
-        items = sorted((k, v) for k, v in row.items() if k not in DEFAULT_EXCLUDE)
+        items = sorted((k, _make_hashable(v)) for k, v in row.items() if k not in DEFAULT_EXCLUDE)
     return tuple(items)
 
 
@@ -116,10 +126,21 @@ def main() -> None:
                 w.writerow(r)
 
     # Markdown summary
-    md = [f"# Weekly A/B Report ({start.isoformat()} – {end.isoformat()})", "", "|date|A|B|red(cnt)|red(unique)|suppressed|", "|---:|---:|---:|---:|---:|---:|"]
-    for r in rows:
-        md.append(f"|{r['date']}|{r['a_total']}|{r['b_total']}|{r['reduction_by_count']*100:.1f}%|{r['reduction_by_unique']*100:.1f}%|{r['suppressed_count']}|")
-    (out_prefix.with_suffix(".md")).write_text("\n".join(md), encoding="utf-8")
+    md_lines: List[str] = [
+        f"# Weekly A/B Report ({start.isoformat()} – {end.isoformat()})",
+        "",
+        "|date|A|B|red(cnt)|red(unique)|suppressed|",
+        "|---:|---:|---:|---:|---:|---:|",
+    ]
+    if rows:
+        for r in rows:
+            md_lines.append(
+                f"|{r['date']}|{r['a_total']}|{r['b_total']}|{r['reduction_by_count']*100:.1f}%|{r['reduction_by_unique']*100:.1f}%|{r['suppressed_count']}|"
+            )
+    else:
+        md_lines.append("")
+        md_lines.append("> No data for the selected date range.")
+    (out_prefix.with_suffix(".md")).write_text("\n".join(md_lines), encoding="utf-8")
 
     print(f"wrote {csv_path} and {out_prefix.with_suffix('.md')}")
 

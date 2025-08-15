@@ -16,6 +16,7 @@ spec:
           labels:
             app: {{ include "bolcd.name" . }}
         spec:
+          serviceAccountName: {{ include "bolcd.jobsServiceAccountName" . }}
           restartPolicy: OnFailure
           containers:
             - name: curl

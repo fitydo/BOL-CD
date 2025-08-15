@@ -1,0 +1,45 @@
+{{- if .Values.cron.cleanup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "bolcd.fullname" . }}-cleanup
+  labels:
+    app: {{ include "bolcd.name" . }}
+spec:
+  schedule: {{ .Values.cron.cleanup.schedule | default "30 3 * * *" | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: {{ include "bolcd.name" . }}
+        spec:
+          serviceAccountName: {{ include "bolcd.jobsServiceAccountName" . }}
+          restartPolicy: OnFailure
+          containers:
+            - name: cleanup
+              image: alpine:3.20
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/sh","-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  find /reports -maxdepth 1 -type f -name 'ab_*.md' -mtime +{{ .Values.cron.cleanup.keepDays | default 14 }} -print -delete
+                  find /reports -maxdepth 1 -type f -name 'ab_*.json' -mtime +{{ .Values.cron.cleanup.keepDays | default 14 }} -print -delete
+                  find /reports/raw -type f -name '*.jsonl' -mtime +{{ .Values.cron.cleanup.keepDays | default 14 }} -print -delete || true
+              volumeMounts:
+                - name: reports
+                  mountPath: /reports
+          volumes:
+            - name: reports
+              {{- if .Values.reportsPVC.enabled }}
+              persistentVolumeClaim:
+                claimName: {{ .Values.reportsPVC.existingClaim | default (include "bolcd.fullname" .) }}-reports
+              {{- else }}
+              emptyDir: {}
+              {{- end }}
+{{- end }}
+
+

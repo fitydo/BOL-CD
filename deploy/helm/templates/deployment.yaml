@@ -14,6 +14,11 @@ spec:
       labels:
         app: {{ include "bolcd.name" . }}
     spec:
+      serviceAccountName: {{ include "bolcd.serviceAccountName" . }}
+      {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml .Values.imagePullSecrets | indent 8 }}
+      {{- end }}
       {{- if .Values.podSecurityContext }}
       securityContext:
 {{ toYaml .Values.podSecurityContext | indent 8 }}
@@ -71,21 +76,31 @@ spec:
               port: {{ .Values.service.port }}
             initialDelaySeconds: 10
             periodSeconds: 20
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh","-c","sleep {{ .Values.pod.preStopSleepSeconds | default 5 }}"]
           {{- if .Values.resources }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
           {{- end }}
-          {{- if or .Values.logs.emptyDir (and .Values.persistence .Values.persistence.logs .Values.persistence.logs.enabled) .Values.extraVolumeMounts }}
+          {{- if or .Values.logs.emptyDir (and .Values.persistence .Values.persistence.logs .Values.persistence.logs.enabled) .Values.extraVolumeMounts .Values.reportsPVC.enabled (.Values.configsPVC.enabled) }}
           volumeMounts:
             {{- if or (.Values.logs.emptyDir) (and .Values.persistence .Values.persistence.logs .Values.persistence.logs.enabled) }}
             - name: logs
               mountPath: /app/logs
             {{- end }}
+            {{- if .Values.reportsPVC.enabled }}
+            - name: reports
+              mountPath: /reports
+              readOnly: true
+            {{- end }}
             {{- with .Values.extraVolumeMounts }}
 {{ toYaml . | indent 12 }}
             {{- end }}
           {{- end }}
-      {{- if or .Values.logs.emptyDir (and .Values.persistence .Values.persistence.logs .Values.persistence.logs.enabled) .Values.extraVolumes }}
+      terminationGracePeriodSeconds: {{ .Values.pod.terminationGraceSeconds | default 30 }}
+      {{- if or .Values.logs.emptyDir (and .Values.persistence .Values.persistence.logs .Values.persistence.logs.enabled) .Values.extraVolumes .Values.reportsPVC.enabled (.Values.configsPVC.enabled) }}
       volumes:
         {{- if and .Values.persistence .Values.persistence.logs .Values.persistence.logs.enabled }}
         - name: logs
@@ -94,6 +109,16 @@ spec:
         {{- else if .Values.logs.emptyDir }}
         - name: logs
           emptyDir: {}
+        {{- end }}
+        {{- if .Values.reportsPVC.enabled }}
+        - name: reports
+          persistentVolumeClaim:
+            claimName: {{ .Values.reportsPVC.existingClaim | default (include "bolcd.fullname" .) }}-reports
+        {{- end }}
+        {{- if .Values.configsPVC.enabled }}
+        - name: configs
+          persistentVolumeClaim:
+            claimName: {{ .Values.configsPVC.existingClaim | default (include "bolcd.fullname" .) }}-configs
         {{- end }}
         {{- with .Values.extraVolumes }}
 {{ toYaml . | indent 8 }}

@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/api/middleware.py
+# hypothesis_version: 6.138.0
+
+[1000.0, 403, ',', ':', 'BOLCD_API_KEYS', 'BOLCD_OIDC_AUD', 'BOLCD_OIDC_ISS', 'BOLCD_OIDC_JWKS', 'Bearer ', 'RS256', 'RS384', 'RS512', 'X-Request-Id', 'admin', 'aud', 'exp', 'forbidden', 'http', 'iat', 'iss', 'keys', 'kid', 'latency_ms', 'method', 'operator', 'path', 'request', 'request_id', 'require', 'role', 'status', 'utf-8', 'viewer', 'x-bolcd-role']

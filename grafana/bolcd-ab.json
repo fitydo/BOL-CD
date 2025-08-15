@@ -1,0 +1,42 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "title": "BOL-CD A/B Overview",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Reduction by count",
+      "targets": [{"expr": "bolcd_ab_reduction_by_count"}]
+    },
+    {
+      "type": "stat",
+      "title": "Reduction by unique",
+      "targets": [{"expr": "bolcd_ab_reduction_by_unique"}]
+    },
+    {
+      "type": "stat",
+      "title": "Suppressed count",
+      "targets": [{"expr": "bolcd_ab_suppressed_count"}]
+    },
+    {
+      "type": "stat",
+      "title": "New in B (unique)",
+      "targets": [{"expr": "bolcd_ab_new_in_b_unique"}]
+    },
+    {
+      "type": "stat",
+      "title": "New in B (count)",
+      "targets": [{"expr": "bolcd_ab_new_in_b_count"}]
+    },
+    {
+      "type": "stat",
+      "title": "Report age (minutes)",
+      "targets": [{"expr": "(time() - bolcd_ab_last_file_mtime)/60"}]
+    }
+  ]
+}
+
+

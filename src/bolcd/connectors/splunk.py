@@ -15,6 +15,13 @@ class SplunkConnector:
         self.token = token
         self.timeout = timeout
         self.retries = retries
+        # Scope for saved searches: owner/app
+        try:
+            self.app = os.getenv("BOLCD_SPLUNK_APP", "search") or "search"
+            self.owner = os.getenv("BOLCD_SPLUNK_OWNER", "nobody") or "nobody"
+        except Exception:
+            self.app = "search"
+            self.owner = "nobody"
         if client is not None:
             self.client = client
         else:
@@ -112,7 +119,9 @@ class SplunkConnector:
             name = rule.get("name", "bolcd_rule")
             spl = rule.get("spl") or rule.get("query") or rule.get("search") or "index=main | head 1"
             # Check existence
-            get_url = f"{self.base_url}/servicesNS/nobody/search/saved/searches/{name}"
+            owner = rule.get("owner", self.owner)
+            app = rule.get("app", self.app)
+            get_url = f"{self.base_url}/servicesNS/{owner}/{app}/saved/searches/{name}"
             try:
                 r = self._get(get_url, headers=self._auth_headers())
                 exists = r.status_code == 200
@@ -120,7 +129,7 @@ class SplunkConnector:
                 exists = False
             # Create or update
             if not exists:
-                post_url = f"{self.base_url}/servicesNS/nobody/search/saved/searches"
+                post_url = f"{self.base_url}/servicesNS/{owner}/{app}/saved/searches"
                 data = {"name": name, "search": spl}
                 rr = self._post(post_url, headers=self._auth_headers(), data=data)
                 rr.raise_for_status()

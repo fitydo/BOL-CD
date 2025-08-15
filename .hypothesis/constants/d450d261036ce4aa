@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/audit/store.py
+# hypothesis_version: 6.138.0
+
+[100, ',', ':', '_prev', 'a', 'action', 'actor', 'diff', 'entries', 'failure_index', 'hash', 'hash_mismatch', 'last_hash', 'ok', 'prev_link_mismatch', 'r', 'raw', 'reason', 'ts', 'utf-8']

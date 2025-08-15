@@ -11,7 +11,7 @@ spec:
     - name: bolcd.slo
       rules:
         - alert: BolcdHighLatencyP95
-          expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="{{ include "bolcd.fullname" . }}"}[5m])) by (le)) > {{ .Values.monitor.alerts.p95Ms | default 0.1 }}
+          expr: histogram_quantile(0.95, sum(rate(bolcd_http_request_duration_seconds_bucket{job="{{ include "bolcd.fullname" . }}"}[5m])) by (le)) > {{ .Values.monitor.alerts.p95Ms | default 0.1 }}
           for: 5m
           labels:
             severity: warning
@@ -26,6 +26,80 @@ spec:
           annotations:
             summary: "BOL-CD backup job failed in last day"
             description: "Check CronJob logs and PVC/S3 credentials"
+        - alert: BolcdBackupStale
+          expr: (time() - max(kube_job_status_completion_time{job=~"kube-state-metrics|kube-state-metrics-kube-state-metrics", job_name=~".*bolcd-backup.*"})) > {{ .Values.monitor.alerts.backupMaxStaleSeconds | default 172800 }}
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "BOL-CD backup last completion too old"
+            description: "No recent successful backup detected"
+        - alert: BolcdABReductionDrop
+          expr: (1 - bolcd_ab_reduction_by_count) > {{ .Values.monitor.alerts.ab.minReductionDrop | default 0.5 }}
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "A/B reduction by count dropped"
+            description: "reduction_by_count below threshold"
+        - alert: BolcdABRegressionsSpike
+          expr: bolcd_ab_new_in_b_unique > {{ .Values.monitor.alerts.ab.maxNewInBUnique | default 100 }}
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "A/B regressions spiking (new_in_b unique)"
+            description: "Investigate rules causing regressions"
+        - alert: BolcdABRegressionsCountSpike
+          expr: bolcd_ab_new_in_b_count > {{ .Values.monitor.alerts.ab.maxNewInBCount | default 1000 }}
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "A/B regressions events spiking (new_in_b count)"
+            description: "Investigate rules causing regressions (count)"
+        - alert: BolcdABReportStale
+          expr: (time() - bolcd_ab_last_file_mtime) > {{ .Values.monitor.alerts.ab.maxStaleSeconds | default 10800 }}
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "A/B daily report stale"
+            description: "No fresh daily AB JSON found in /reports"
+        - alert: BolcdHttp5xxHigh
+          expr: (sum(rate(bolcd_http_requests_total{code=~"5..",job="{{ include "bolcd.fullname" . }}"}[5m])) / sum(rate(bolcd_http_requests_total{job="{{ include "bolcd.fullname" . }}"}[5m]))) > {{ .Values.monitor.alerts.http.errorRate5xx | default 0.01 }}
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "HTTP 5xx error rate high"
+            description: "> {{ .Values.monitor.alerts.http.errorRate5xx | default 0.01 }} for 10m"
+        - alert: BolcdHttp4xxHigh
+          expr: (sum(rate(bolcd_http_requests_total{code=~"4..",job="{{ include "bolcd.fullname" . }}"}[5m])) / sum(rate(bolcd_http_requests_total{job="{{ include "bolcd.fullname" . }}"}[5m]))) > {{ .Values.monitor.alerts.http.errorRate4xx | default 0.05 }}
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "HTTP 4xx error rate high"
+            description: "> {{ .Values.monitor.alerts.http.errorRate4xx | default 0.05 }} for 10m"
+        - alert: BolcdHttp429High
+          expr: (sum(rate(bolcd_http_requests_total{code="429",job="{{ include "bolcd.fullname" . }}"}[5m])) / sum(rate(bolcd_http_requests_total{job="{{ include "bolcd.fullname" . }}"}[5m]))) > {{ .Values.monitor.alerts.http.errorRate429 | default 0.02 }}
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "HTTP 429 (rate limited) error rate high"
+            description: "> {{ .Values.monitor.alerts.http.errorRate429 | default 0.02 }} for 10m"
+        {{- if .Values.monitor.alerts.rateLimit.enabled }}
+        - alert: BolcdRateLimitedSpikes
+          expr: increase(bolcd_rate_limited_total[5m]) > {{ .Values.monitor.alerts.rateLimit.increase5m | default 0 }}
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Rate limiting occurring"
+            description: "bolcd_rate_limited_total increased in last 5m"
+        {{- end }}
 {{- end }}
 
 

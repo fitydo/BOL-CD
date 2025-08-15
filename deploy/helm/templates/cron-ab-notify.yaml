@@ -1,0 +1,62 @@
+{{- if .Values.cron.abNotify.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "bolcd.fullname" . }}-ab-notify
+  labels:
+    app: {{ include "bolcd.name" . }}
+spec:
+  schedule: {{ .Values.cron.abNotify.schedule | default "15 7 * * *" | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: {{ include "bolcd.name" . }}
+        spec:
+          serviceAccountName: {{ include "bolcd.jobsServiceAccountName" . }}
+          restartPolicy: OnFailure
+          containers:
+            - name: notify
+              image: alpine:3.20
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: WEBHOOK
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.cron.abNotify.webhookSecret.name | quote }}
+                      key: {{ .Values.cron.abNotify.webhookSecret.key | quote }}
+              command: ["/bin/sh","-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  apk add --no-cache curl jq >/dev/null
+                  D=$(date +%F)
+                  FILE="/reports/ab_${D}_keys.md"
+                  if [ ! -f "$FILE" ]; then
+                    # fallback to non-keys file name
+                    FILE="/reports/ab_${D}.md"
+                  fi
+                  echo "posting ${FILE} to Slack webhook"
+                  # Convert Markdown to simple text (basic): strip table pipes
+                  BODY=$(sed 's/|//g' "$FILE")
+                  # Post to slack/msteams-compatible webhook
+                  curl -sS -X POST -H 'Content-Type: application/json' \
+                    --data "$(jq -Rs '{text: .}' <<<"${BODY}")" \
+                    "${WEBHOOK}"
+              volumeMounts:
+                - name: reports
+                  mountPath: /reports
+          volumes:
+            - name: reports
+              {{- if .Values.reportsPVC.enabled }}
+              persistentVolumeClaim:
+                claimName: {{ .Values.reportsPVC.existingClaim | default (include "bolcd.fullname" .) }}-reports
+              {{- else }}
+              emptyDir: {}
+              {{- end }}
+{{- end }}
+
+

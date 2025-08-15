@@ -11,13 +11,58 @@ service:
   type: ClusterIP
   port: 8080
 
+serviceAccount:
+  create: true
+  name: ""
+  rbac:
+    create: true
+
+jobServiceAccount:
+  create: true
+  name: ""
+  rbac:
+    create: true
+
+externalSecrets:
+  enabled: false
+  secretStoreRef:
+    name: ""
+    kind: ClusterSecretStore
+  targetName: bolcd-secrets
+  refreshInterval: 1h
+  data: []
+  # examples:
+  # data:
+  #   - secretKey: splunk_url
+  #     remoteRef:
+  #       key: prod/siem/splunk
+  #       property: url
+  #   - secretKey: splunk_token
+  #     remoteRef:
+  #       key: prod/siem/splunk
+  #       property: token
+
 env:
   BOLCD_API_KEYS: "view:viewer,testop:operator"
+  # Optional OIDC/OAuth2 settings (enable when all are set)
+  # BOLCD_OIDC_ISS: "https://issuer.example.com/"
+  # BOLCD_OIDC_AUD: "bolcd-api"
+  # BOLCD_OIDC_JWKS: "https://issuer.example.com/.well-known/jwks.json"
+  # Optional CORS origins (comma-separated)
+  # BOLCD_CORS_ORIGINS: "https://console.example.com,https://ops.example.com"
+  # Rate limiting defaults (enabled by default in app)
+  # BOLCD_RATE_LIMIT_ENABLED: "1"
+  # BOLCD_RATE_LIMIT_RPS: "10"
+  # BOLCD_RATE_LIMIT_BURST: "20"
 
 resources: {}
 
 securityContext: {}
 podSecurityContext: {}
+
+pod:
+  terminationGraceSeconds: 30
+  preStopSleepSeconds: 5
 
 logs:
   emptyDir: false
@@ -69,6 +114,28 @@ monitor:
   alertsEnabled: false
   alerts:
     p95Ms: 0.1  # 100ms
+    ab:
+      # reduction_by_count must stay >= (1 - minReductionDrop)
+      minReductionDrop: 0.4
+      # new_in_b unique upper bound
+      maxNewInBUnique: 500
+      # new_in_b total events upper bound
+      maxNewInBCount: 5000
+      # report considered stale after seconds
+      maxStaleSeconds: 21600
+    backupMaxStaleSeconds: 172800
+    http:
+      errorRate5xx: 0.01
+      errorRate4xx: 0.05
+      errorRate429: 0.02
+
+    rateLimit:
+      enabled: false
+      increase5m: 0
+
+  grafana:
+    enabled: false
+    folder: "Observability"
 
 backup:
   enabled: false
@@ -109,10 +176,42 @@ cron:
     schedule: "0 4 * * 1"
     prefixA: "data/raw/splunk_A_"
     prefixB: "data/raw/splunk_B_"
+    # 集計のキー（オプション）
+    # keys: ["host", "index", "sourcetype", "source", "component", "group"]
+
+  abDaily:
+    enabled: false
+    # 毎日 01:05 開始
+    schedule: "5 1 * * *"
+    hours: 24
+    splunk:
+      index: "_internal"
+      # B側の除外条件（実運用では実際の抑制条件へ置換）
+      exclude: "sourcetype=splunkd*"
+
+  # Daily notification to Slack (optional)
+  abNotify:
+    enabled: false
+    # 毎日 07:15 に前日分の日次レポートを送信
+    schedule: "15 7 * * *"
+    webhookSecret:
+      name: "bolcd-notify"
+      key: "webhook"
+
+  cleanup:
+    enabled: false
+    schedule: "30 3 * * *"
+    keepDays: 14
 
 reportsPVC:
   enabled: false
   size: 2Gi
+  storageClass: ""
+  existingClaim: ""
+
+configsPVC:
+  enabled: false
+  size: 1Gi
   storageClass: ""
   existingClaim: ""
 

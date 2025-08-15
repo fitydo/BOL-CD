@@ -16,6 +16,7 @@ spec:
           labels:
             app: {{ include "bolcd.name" . }}
         spec:
+          serviceAccountName: {{ include "bolcd.jobsServiceAccountName" . }}
           restartPolicy: OnFailure
           containers:
             - name: python
@@ -26,9 +27,10 @@ spec:
                 - |
                   set -euo pipefail
                   python scripts/ab_weekly.py \
-                    --prefix-a {{ .Values.cron.abWeekly.prefixA | default "data/raw/splunk_A_" }} \
-                    --prefix-b {{ .Values.cron.abWeekly.prefixB | default "data/raw/splunk_B_" }} \
-                    --out-prefix /reports/ab_weekly_$(date +%F)
+                    --prefix-a {{ .Values.cron.abWeekly.prefixA | default "/reports/raw/splunk_A_" }} \
+                    --prefix-b {{ .Values.cron.abWeekly.prefixB | default "/reports/raw/splunk_B_" }} \
+                    --out-prefix /reports/ab_weekly_$(date +%F){{- if .Values.cron.abWeekly.keys }} \
+                    --keys {{ join " " .Values.cron.abWeekly.keys }}{{- end }}
               volumeMounts:
                 - name: reports
                   mountPath: /reports

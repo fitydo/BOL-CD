@@ -1,0 +1,30 @@
+{{- if and .Values.monitor.alertmanager.enabled (has "monitoring.coreos.com/v1alpha1" .Capabilities.APIVersions) }}
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: {{ include "bolcd.fullname" . }}-amconfig
+  labels:
+    app: {{ include "bolcd.name" . }}
+    release: {{ .Values.monitor.prometheusRelease | default "prometheus" | quote }}
+spec:
+  route:
+    receiver: default
+    groupBy: ['alertname']
+    routes:
+      - receiver: slack
+        matchers:
+          - name: severity
+            value: warning|critical
+            regex: true
+  receivers:
+    - name: default
+    - name: slack
+      slackConfigs:
+        - apiURL:
+            name: {{ .Values.monitor.alertmanager.slack.secretName | default "alertmanager-slack" | quote }}
+            key: {{ .Values.monitor.alertmanager.slack.key | default "webhook" | quote }}
+          channel: {{ .Values.monitor.alertmanager.slack.channel | default "#alerts" | quote }}
+          sendResolved: true
+{{- end }}
+
+
