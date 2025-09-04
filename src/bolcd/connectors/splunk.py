@@ -35,7 +35,29 @@ class SplunkConnector:
             self.client = httpx and httpx.Client(timeout=timeout, verify=verify)
 
     def _auth_headers(self) -> Dict[str, str]:
-        return {"Authorization": f"Splunk {self.token}"}
+        """Build Authorization header for Splunk Management API.
+
+        Supports both session keys ("Splunk <sessionKey>") and UI-issued
+        authentication tokens ("Bearer <token>"). You can either pass the
+        token value already prefixed (e.g., "Bearer abc..."), or set
+        BOLCD_SPLUNK_AUTH_SCHEME to "bearer" or "splunk" to force a scheme.
+        Defaults to "Splunk <token>" for backward compatibility.
+        """
+        scheme_env = os.getenv("BOLCD_SPLUNK_AUTH_SCHEME", "").strip().lower()
+        tok = (self.token or "").strip()
+        if not tok:
+            return {"Authorization": ""}
+        # If the token already carries a recognized scheme, use as-is
+        lower = tok.lower()
+        if lower.startswith("bearer ") or lower.startswith("splunk "):
+            return {"Authorization": tok}
+        # Otherwise infer from env or default to Splunk
+        if scheme_env == "bearer":
+            return {"Authorization": f"Bearer {tok}"}
+        if scheme_env == "splunk":
+            return {"Authorization": f"Splunk {tok}"}
+        # default (session key style)
+        return {"Authorization": f"Splunk {tok}"}
 
     def _post(self, url: str, **kwargs) -> Any:
         last_exc: Exception | None = None

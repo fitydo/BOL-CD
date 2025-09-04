@@ -1,0 +1,25 @@
+# Local A/B validation overrides (hourly cadence)
+
+monitor:
+  serviceMonitorEnabled: true
+  grafana:
+    enabled: true
+
+reportsPVC:
+  enabled: true
+
+cron:
+  abDaily:
+    enabled: true
+    schedule: "5 * * * *"  # hourly
+    hours: 1
+    # Narrow keys for stability; adjust as needed for your dataset
+    keys: ["index", "sourcetype", "rule_name", "severity"]
+    splunk:
+      index: "security"
+      exclude: "severity=low OR rule_name=NoiseRule"
+    extraEnv:
+      - name: BOLCD_SPLUNK_AUTH_SCHEME
+        value: bearer
+
+

@@ -1,8 +1,8 @@
 {{- if .Values.monitor.grafana.enabled }}
 {{- $job := include "bolcd.fullname" . -}}
-{{- $exprLatency := printf "histogram_quantile(0.95, sum(rate(bolcd_http_request_duration_seconds_bucket{job=\"%s\"}[5m])) by (le))" $job -}}
-{{- $exprErr5 := printf "sum(rate(bolcd_http_requests_total{job=\"%s\",code=~\"5..\"}[5m])) / sum(rate(bolcd_http_requests_total{job=\"%s\"}[5m]))" $job $job -}}
-{{- $exprErr4 := printf "sum(rate(bolcd_http_requests_total{job=\"%s\",code=~\"4..\"}[5m])) / sum(rate(bolcd_http_requests_total{job=\"%s\"}[5m]))" $job $job -}}
+{{- $exprLatency := printf "histogram_quantile(0.95, sum(rate(bolcd_http_request_duration_seconds_bucket{job=\"%s\"}[5m])) by (le))" (include "bolcd.name" .) -}}
+{{- $exprErr5 := printf "sum(rate(bolcd_http_requests_total{job=\"%s\",code=~\"5..\"}[5m])) / sum(rate(bolcd_http_requests_total{job=\"%s\"}[5m]))" (include "bolcd.name" .) (include "bolcd.name" .) -}}
+{{- $exprErr4 := printf "sum(rate(bolcd_http_requests_total{job=\"%s\",code=~\"4..\"}[5m])) / sum(rate(bolcd_http_requests_total{job=\"%s\"}[5m]))" (include "bolcd.name" .) (include "bolcd.name" .) -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -46,10 +46,14 @@ data:
           "type": "timeseries",
           "title": "A/B metrics",
           "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+          {{- $jobName := include "bolcd.name" . -}}
+          {{- $exprAbCount := printf "bolcd_ab_reduction_by_count{job=%q}" $jobName -}}
+          {{- $exprAbNewUni := printf "bolcd_ab_new_in_b_unique{job=%q}" $jobName -}}
+          {{- $exprAbNewCnt := printf "bolcd_ab_new_in_b_count{job=%q}" $jobName -}}
           "targets": [
-            {"expr": "bolcd_ab_reduction_by_count", "refId": "A"},
-            {"expr": "bolcd_ab_new_in_b_unique", "refId": "B"},
-            {"expr": "bolcd_ab_new_in_b_count", "refId": "C"}
+            { "expr": {{ $exprAbCount | toJson }}, "refId": "A" },
+            { "expr": {{ $exprAbNewUni | toJson }}, "refId": "B" },
+            { "expr": {{ $exprAbNewCnt | toJson }}, "refId": "C" }
           ],
           "options": {"legend": {"displayMode": "list"}}
         }

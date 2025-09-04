@@ -219,10 +219,13 @@ cron:
     schedule: "5 1 * * *"
     hours: 24
     # 集計のキーを限定して、uniqueの安定性を高める
-    keys: ["host", "index", "sourcetype", "source", "component", "group"]
+    keys: ["index", "sourcetype", "rule_name", "severity"]
     splunk:
-      index: "_internal"
-      exclude: "sourcetype=splunkd*"
+      index: "security"
+      exclude: "severity=low OR rule_name=\"NoiseRule\""
+    extraEnv:
+      - name: BOLCD_SPLUNK_AUTH_SCHEME
+        value: bearer
 
   abNotify:
     enabled: true
