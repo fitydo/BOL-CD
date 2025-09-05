@@ -163,10 +163,11 @@ async def ingest_batch(
                 "decision": decision["decision"] if decision else None
             })
             
-        except Exception as e:
+        except Exception:
+            # Do not leak internal exception details
             errors.append({
                 "alert_id": alert_data.id if alert_data.id else "unknown",
-                "error": str(e)
+                "error": "internal_error"
             })
     
     # Commit all at once

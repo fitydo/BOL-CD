@@ -288,7 +288,7 @@ class TestE2EFlow:
         assert response.status_code == 200
         metrics = response.text
         assert "bolcd_suppress_total" in metrics
-        assert "bolcd_decision_latency_ms" in metrics
+        assert "bolcd_decision_latency_seconds" in metrics
 
 
 @pytest.mark.asyncio
@@ -315,7 +315,7 @@ async def test_metrics_endpoint():
             "bolcd_suppress_total",
             "bolcd_late_replay_total",
             "bolcd_false_suppression_total",
-            "bolcd_decision_latency_ms"
+            "bolcd_decision_latency_seconds"
         ]
         
         for metric in expected_metrics:

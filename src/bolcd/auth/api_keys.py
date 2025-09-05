@@ -6,19 +6,29 @@ from fastapi import Header, HTTPException, Depends
 from typing import Optional, Set
 import hashlib
 import hmac
+import logging
 
 # Parse API keys from environment
 # Format: 'condensed:KEY1,full:KEY2,delta:KEY3,admin:KEY_ADMIN'
 RAW_KEYS = os.getenv("BOLCD_API_KEYS", "condensed:demo-key-condensed,full:demo-key-full,admin:demo-key-admin")
 KEYS = {}
 
+# Hashing configuration (avoid weak hashing per CodeQL)
+# Supported: plain, pbkdf2
+HASH_METHOD = os.getenv("BOLCD_HASH_METHOD", os.getenv("BOLCD_HASH_KEYS", "plain")).lower()
+PBKDF2_SALT = os.getenv("BOLCD_API_KEY_SALT", "bolcd-api-key-pepper").encode()
+PBKDF2_ITERATIONS = int(os.getenv("BOLCD_API_KEY_ITERS", "200000"))
+logger = logging.getLogger(__name__)
+
 for pair in [p.strip() for p in RAW_KEYS.split(",") if p.strip()]:
     try:
         scope, key = pair.split(":", 1)
-        # Store hashed keys for security (in production)
-        if os.getenv("BOLCD_HASH_KEYS", "false").lower() == "true":
-            key_hash = hashlib.sha256(key.encode()).hexdigest()
-            KEYS[key_hash] = scope
+        # Store derived keys securely when hashing is enabled
+        if HASH_METHOD in ("true", "pbkdf2"):
+            derived = hashlib.pbkdf2_hmac(
+                "sha256", key.encode(), PBKDF2_SALT, PBKDF2_ITERATIONS
+            ).hex()
+            KEYS[derived] = scope
         else:
             KEYS[key] = scope
     except ValueError:
@@ -26,9 +36,11 @@ for pair in [p.strip() for p in RAW_KEYS.split(",") if p.strip()]:
 
 def verify_api_key(key: str) -> Optional[str]:
     """Verify API key and return scope"""
-    if os.getenv("BOLCD_HASH_KEYS", "false").lower() == "true":
-        key_hash = hashlib.sha256(key.encode()).hexdigest()
-        return KEYS.get(key_hash)
+    if HASH_METHOD in ("true", "pbkdf2"):
+        derived = hashlib.pbkdf2_hmac(
+            "sha256", key.encode(), PBKDF2_SALT, PBKDF2_ITERATIONS
+        ).hex()
+        return KEYS.get(derived)
     return KEYS.get(key)
 
 def require_scope(allowed_scopes: Set[str]):

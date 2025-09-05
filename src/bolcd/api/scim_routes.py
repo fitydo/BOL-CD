@@ -8,12 +8,14 @@ from fastapi import APIRouter, Request, Depends, HTTPException, Query, Response
 from fastapi.responses import JSONResponse
 from typing import Dict, Any, Optional
 from pydantic import BaseModel
+import logging
 
 from ..auth.scim import SCIMManager, SCIMUser, SCIMGroup, SCIMListResponse
 from ..auth.manager import AuthManager
 from .middleware import verify_role
 
 router = APIRouter(prefix="/scim/v2", tags=["SCIM"])
+logger = logging.getLogger(__name__)
 
 # SCIM requires specific error format
 def scim_error(status: int, detail: str) -> JSONResponse:
@@ -154,8 +156,9 @@ async def create_user(
     # Parse SCIM user from request
     try:
         scim_user = SCIMUser(**user_data)
-    except Exception as e:
-        return scim_error(400, f"Invalid user data: {str(e)}")
+    except Exception:
+        logger.exception("Invalid SCIM user data")
+        return scim_error(400, "Invalid user data")
     
     db = auth_manager.get_db()
     try:
@@ -164,8 +167,9 @@ async def create_user(
             status_code=201,
             content=created_user.model_dump()
         )
-    except Exception as e:
-        return scim_error(409, f"Failed to create user: {str(e)}")
+    except Exception:
+        logger.exception("Failed to create SCIM user")
+        return scim_error(409, "Failed to create user")
     finally:
         db.close()
 
@@ -183,8 +187,9 @@ async def update_user(
     # Parse SCIM user from request
     try:
         scim_user = SCIMUser(**user_data)
-    except Exception as e:
-        return scim_error(400, f"Invalid user data: {str(e)}")
+    except Exception:
+        logger.exception("Invalid SCIM user data for update")
+        return scim_error(400, "Invalid user data")
     
     db = auth_manager.get_db()
     try:
@@ -287,8 +292,9 @@ async def create_group(
     """Create a new SCIM group"""
     try:
         scim_group = SCIMGroup(**group_data)
-    except Exception as e:
-        return scim_error(400, f"Invalid group data: {str(e)}")
+    except Exception:
+        logger.exception("Invalid SCIM group data")
+        return scim_error(400, "Invalid group data")
     
     scim_manager = SCIMManager()
     created_group = scim_manager.create_group(scim_group)
@@ -308,8 +314,9 @@ async def update_group(
     """Update a SCIM group"""
     try:
         scim_group = SCIMGroup(**group_data)
-    except Exception as e:
-        return scim_error(400, f"Invalid group data: {str(e)}")
+    except Exception:
+        logger.exception("Invalid SCIM group data for update")
+        return scim_error(400, "Invalid group data")
     
     scim_manager = SCIMManager()
     updated_group = scim_manager.update_group(group_id, scim_group)
