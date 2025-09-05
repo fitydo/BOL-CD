@@ -44,6 +44,7 @@ jobs:
           pip install schemathesis
           export PYTHONPATH="${PYTHONPATH}:src"
           schemathesis run api/openapi.yaml \
+            --base-url=http://localhost:8080 \
             --app=bolcd.api.app:app \
             --checks all \
             --hypothesis-deadline=None \

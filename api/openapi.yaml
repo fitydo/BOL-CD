@@ -39,6 +39,12 @@ paths:
                   vectors:
                     type: array
                     items: { type: string, description: "e.g., 0b010110..." }
+        '422':
+          description: Unprocessable Entity (validation error)
+          content:
+            application/json:
+              schema:
+                type: object
   /edges/recompute:
     post:
       summary: 含意推定→FDR→DAG→推移簡約を実行
@@ -57,6 +63,12 @@ paths:
       responses:
         '200':
           description: 実行結果（セグメント指定時は summary を返す）
+        '403':
+          description: Forbidden (insufficient privileges)
+          content:
+            application/json:
+              schema:
+                type: object
   /graph:
     get:
       summary: 最小連鎖グラフを取得
@@ -70,20 +82,23 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  nodes: { type: array, items: { type: string } }
-                  edges:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        src: { type: string }
-                        dst: { type: string }
-                        n_src1: { type: integer }
-                        k_counterex: { type: integer }
-                        ci95_upper: { type: number }
-                        q_value: { type: number }
+                oneOf:
+                  - type: object
+                    properties:
+                      nodes: { type: array, items: { type: string } }
+                      edges:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            src: { type: string }
+                            dst: { type: string }
+                            n_src1: { type: integer }
+                            k_counterex: { type: integer }
+                            ci95_upper: { type: number }
+                            q_value: { type: number }
+                  - type: string
+                    description: GraphML serialized as string when format=graphml
   /siem/writeback:
     post:
       summary: SIEM へ「連鎖化ルール」や抑制設定を書き戻す
@@ -100,3 +115,9 @@ paths:
       responses:
         '200':
           description: 書き戻し結果
+        '403':
+          description: Forbidden (insufficient privileges)
+          content:
+            application/json:
+              schema:
+                type: object
