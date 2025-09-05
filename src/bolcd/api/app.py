@@ -111,7 +111,10 @@ def _update_ab_metrics_from_reports() -> None:
         raw = latest.read_text(encoding="utf-8")
         data = json.loads(raw)
         # Allow effects-only JSON (when produced via tee) or full report JSON
-        eff = data if isinstance(data, dict) and all(k in data for k in ("reduction_by_count", "reduction_by_unique")) else data.get("effects", {})
+        if isinstance(data, dict) and all(k in data for k in ("reduction_by_count", "reduction_by_unique")):
+            eff = data
+        else:
+            eff = data.get("effects", {}) if isinstance(data, dict) else {}
         AB_REDUCTION_COUNT.set(float(eff.get("reduction_by_count", 0.0)))
         AB_REDUCTION_UNIQUE.set(float(eff.get("reduction_by_unique", 0.0)))
         AB_SUPPRESSED_COUNT.set(float(eff.get("suppressed_count", 0.0)))
