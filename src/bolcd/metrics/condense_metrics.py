@@ -4,6 +4,7 @@ Prometheus Metrics for Condensed Alert System
 from prometheus_client import Counter, Gauge, Histogram, Summary
 import time
 from functools import wraps
+import inspect
 
 # Counters
 alerts_total = Counter(
@@ -92,18 +93,28 @@ late_replay_delay = Summary(
 
 # Decorator for timing functions
 def observe_duration(metric):
-    """Decorator to observe function duration"""
+    """Decorator to observe function duration (sync/async safe)"""
     def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            start = time.time()
-            try:
-                result = func(*args, **kwargs)
-                return result
-            finally:
-                duration = time.time() - start
-                metric.observe(duration)
-        return wrapper
+        if inspect.iscoroutinefunction(func):
+            @wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                start = time.time()
+                try:
+                    return await func(*args, **kwargs)
+                finally:
+                    duration = time.time() - start
+                    metric.observe(duration)
+            return async_wrapper
+        else:
+            @wraps(func)
+            def sync_wrapper(*args, **kwargs):
+                start = time.time()
+                try:
+                    return func(*args, **kwargs)
+                finally:
+                    duration = time.time() - start
+                    metric.observe(duration)
+            return sync_wrapper
     return decorator
 
 # Helper functions
