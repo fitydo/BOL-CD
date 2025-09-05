@@ -1,0 +1,98 @@
+{
+  "composite_rules": [
+    {
+      "entity": "web-prod-01",
+      "rule": "RULE-0738",
+      "threshold": 2,
+      "window": 3600,
+      "action": "suppress"
+    },
+    {
+      "entity": "db-master-01",
+      "rule": "RULE-0738",
+      "threshold": 2,
+      "window": 3600,
+      "action": "suppress"
+    },
+    {
+      "entity": "proxy-01",
+      "rule": "RULE-0888",
+      "threshold": 2,
+      "window": 3600,
+      "action": "suppress"
+    },
+    {
+      "entity": "app-server-01",
+      "rule": "RULE-0686",
+      "threshold": 2,
+      "window": 3600,
+      "action": "suppress"
+    },
+    {
+      "entity": "mail-server-01",
+      "rule": "RULE-0888",
+      "threshold": 2,
+      "window": 3600,
+      "action": "suppress"
+    },
+    {
+      "entity": "web-prod-01",
+      "rule": "RULE-0888",
+      "threshold": 2,
+      "window": 3600,
+      "action": "suppress"
+    },
+    {
+      "entity": "proxy-01",
+      "rule": "RULE-0686",
+      "threshold": 2,
+      "window": 3600,
+      "action": "suppress"
+    },
+    {
+      "entity": "file-server-01",
+      "rule": "RULE-0241",
+      "threshold": 2,
+      "window": 3600,
+      "action": "suppress"
+    }
+  ],
+  "time_based_rules": [],
+  "correlation_rules": [
+    {
+      "entity": "web-prod-01",
+      "correlated_rules": [
+        "RULE-0686",
+        "RULE-0888",
+        "RULE-0004",
+        "RULE-0738"
+      ],
+      "threshold": 5,
+      "window": 1800,
+      "action": "group_suppress"
+    },
+    {
+      "entity": "proxy-01",
+      "correlated_rules": [
+        "RULE-0888",
+        "RULE-0004",
+        "RULE-0686",
+        "RULE-0738"
+      ],
+      "threshold": 5,
+      "window": 1800,
+      "action": "group_suppress"
+    },
+    {
+      "entity": "app-server-01",
+      "correlated_rules": [
+        "RULE-0888",
+        "RULE-0686",
+        "RULE-0738"
+      ],
+      "threshold": 5,
+      "window": 1800,
+      "action": "group_suppress"
+    }
+  ]
+}

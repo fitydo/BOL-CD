@@ -1,0 +1,38 @@
+{
+  "splunk": {
+    "host": "splunk.example.com",
+    "port": 8089,
+    "username": "${SPLUNK_USER}",
+    "password": "${SPLUNK_PASS}",
+    "search_query": "search index=security earliest=-1h | table _time host source signature severity",
+    "output_dir": "data/raw"
+  },
+  "sentinel": {
+    "workspace_id": "${SENTINEL_WORKSPACE_ID}",
+    "tenant_id": "${SENTINEL_TENANT_ID}",
+    "client_id": "${SENTINEL_CLIENT_ID}",
+    "client_secret": "${SENTINEL_CLIENT_SECRET}",
+    "kql_query": "SecurityAlert | where TimeGenerated > ago(1h) | project TimeGenerated, Computer, AlertName, AlertSeverity",
+    "output_dir": "data/raw"
+  },
+  "opensearch": {
+    "host": "opensearch.example.com",
+    "port": 9200,
+    "username": "${OPENSEARCH_USER}",
+    "password": "${OPENSEARCH_PASS}",
+    "index": "security-*",
+    "query": {
+      "range": {
+        "@timestamp": {
+          "gte": "now-1h"
+        }
+      }
+    },
+    "output_dir": "data/raw"
+  },
+  "streaming": {
+    "interval_seconds": 300,
+    "batch_size": 1000,
+    "enable_ab_processing": true
+  }
+}

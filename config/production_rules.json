@@ -1,0 +1,14 @@
+{
+  "version": "2.0",
+  "timestamp": "2025-09-05T17:24:24.990402",
+  "suppression_rules": [],
+  "threshold_rules": [
+    {
+      "frequency_threshold": 0.030000000000000023,
+      "burst_threshold": 4.999994999699275e-07,
+      "similarity_threshold": 0.0,
+      "action": "suppress_if_all_exceed"
+    }
+  ],
+  "ensemble_rules": []
+}
