@@ -60,3 +60,4 @@ def test_kpi_e2e(tmp_path: pathlib.Path):
     assert out['ops']['triage_p50_seconds'] is not None
     assert out['risk']['mttd_median_seconds'] is not None
     assert out['cost']['savings_usd'] == 40 * 4.3  # (200-160) * 4.3
+

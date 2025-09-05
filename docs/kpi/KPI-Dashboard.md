@@ -46,3 +46,4 @@ Visualize 4 KPI categories (Noise/Ops/Cost/Risk) via daily updates → /metrics 
 - [ ] (Cost usage) `values.yaml` sets `ingestAGB/B` and `costPerGbUSD`
 - [ ] Grafana dashboard appears and updates
 - [ ] `/metrics` exposes all `bolcd_*` KPIs
+

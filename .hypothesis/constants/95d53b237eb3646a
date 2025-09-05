@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/models/condense.py
+# hypothesis_version: 6.137.3
+
+[0.0, 'Alert', 'DecisionRecord', 'LateReplay', 'Suppressed', 'alert', 'alert_id', 'alerts', 'alerts.id', 'decision', 'decisions', 'late_replay', 'medium', 'method', 'pending', 'suppressed', 'validation_logs', 'validation_ts']

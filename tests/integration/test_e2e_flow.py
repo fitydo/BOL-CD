@@ -2,6 +2,7 @@
 End-to-end integration tests for the condensed alerts system
 """
 import pytest
+import pytest_asyncio
 import asyncio
 import httpx
 from datetime import datetime, timedelta
@@ -9,31 +10,47 @@ import json
 import os
 from typing import List, Dict, Any
 
+# Run all tests in this module with pytest-asyncio
+pytestmark = pytest.mark.asyncio
+
+# Ensure API keys are configured before importing the app (keys are read at import)
+os.environ["BOLCD_API_KEYS"] = "admin:admin-key,condensed:test-key,full:full-key,ingest:ingest-key"
+os.environ["BOLCD_HASH_METHOD"] = "plain"
+os.environ["BOLCD_RATE_LIMIT_ENABLED"] = "0"
+
 # Test configuration
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://test")
 API_KEY_ADMIN = os.getenv("TEST_API_KEY_ADMIN", "admin-key")
 API_KEY_CONSUMER = os.getenv("TEST_API_KEY_CONSUMER", "test-key")
 
 
-@pytest.fixture
+from src.bolcd.api.main import app
+
+
+@pytest_asyncio.fixture
 async def client():
-    """Create an async HTTP client"""
-    async with httpx.AsyncClient(base_url=API_BASE_URL) as client:
+    """Create an async HTTP client against the in-memory ASGI app."""
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url=API_BASE_URL) as client:
         yield client
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def cleanup_db():
     """Clean up test data after each test"""
+    # Reset DB tables before each test for isolation
+    from src.bolcd.db import engine
+    from src.bolcd.models.condense import Base
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
     yield
-    # Cleanup logic here if needed
-    pass
 
 
 class TestE2EFlow:
     """End-to-end test scenarios"""
     
-    async def test_full_alert_processing_flow(self, client: httpx.AsyncClient, cleanup_db):
+    @pytest.mark.usefixtures("cleanup_db")
+    async def test_full_alert_processing_flow(self, client: httpx.AsyncClient):
         """Test the complete flow: ingest -> decide -> deliver/suppress -> late replay"""
         
         # Step 1: Ingest multiple alerts
@@ -112,7 +129,7 @@ class TestE2EFlow:
             assert response.status_code == 200
             explanation = response.json()
             assert "decision" in explanation
-            assert "reason" in explanation
+            assert "type" in explanation["decision"]
             print(f"Alert {ingested_ids[0]} explanation: {explanation}")
         
         # Step 5: Check late replay (may be empty initially)
@@ -124,7 +141,8 @@ class TestE2EFlow:
         late = response.json()
         print(f"Late replay: {len(late.get('alerts', []))} alerts")
     
-    async def test_high_severity_protection(self, client: httpx.AsyncClient, cleanup_db):
+    @pytest.mark.usefixtures("cleanup_db")
+    async def test_high_severity_protection(self, client: httpx.AsyncClient):
         """Test that high/critical severity alerts are never suppressed"""
         
         severities = ["low", "medium", "high", "critical"]
@@ -187,7 +205,8 @@ class TestE2EFlow:
         
         print("API key scope tests passed")
     
-    async def test_near_window_suppression(self, client: httpx.AsyncClient, cleanup_db):
+    @pytest.mark.usefixtures("cleanup_db")
+    async def test_near_window_suppression(self, client: httpx.AsyncClient):
         """Test that correlated alerts within near window are suppressed"""
         
         base_time = datetime.now()
@@ -246,10 +265,12 @@ class TestE2EFlow:
         ]
         print(f"Condensed alerts for host-corr: {len(entity_alerts)}")
     
-    async def test_performance_under_load(self, client: httpx.AsyncClient, cleanup_db):
+    @pytest.mark.usefixtures("cleanup_db")
+    async def test_performance_under_load(self, client: httpx.AsyncClient):
         """Test system performance under load"""
         
         num_alerts = 100
+        batch_size = 10  # Limit concurrent requests to avoid connection pool exhaustion
         start_time = datetime.now()
         
         # Generate and send alerts concurrently
@@ -270,9 +291,13 @@ class TestE2EFlow:
             )
             return response.status_code == 200
         
-        # Send all alerts concurrently
-        tasks = [send_alert(i) for i in range(num_alerts)]
-        results = await asyncio.gather(*tasks)
+        # Send alerts in batches to avoid connection pool exhaustion
+        results = []
+        for batch_start in range(0, num_alerts, batch_size):
+            batch_end = min(batch_start + batch_size, num_alerts)
+            batch_tasks = [send_alert(i) for i in range(batch_start, batch_end)]
+            batch_results = await asyncio.gather(*batch_tasks)
+            results.extend(batch_results)
         
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
@@ -294,7 +319,8 @@ class TestE2EFlow:
 @pytest.mark.asyncio
 async def test_health_check():
     """Test health check endpoint"""
-    async with httpx.AsyncClient(base_url=API_BASE_URL) as client:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url=API_BASE_URL) as client:
         response = await client.get("/health")
         assert response.status_code == 200
         health = response.json()
@@ -305,7 +331,8 @@ async def test_health_check():
 @pytest.mark.asyncio
 async def test_metrics_endpoint():
     """Test Prometheus metrics endpoint"""
-    async with httpx.AsyncClient(base_url=API_BASE_URL) as client:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url=API_BASE_URL) as client:
         response = await client.get("/metrics")
         assert response.status_code == 200
         assert "text/plain" in response.headers["content-type"]

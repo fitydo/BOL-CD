@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/db.py
+# hypothesis_version: 6.137.3
+
+['DB_ECHO', 'DB_URL', 'check_same_thread', 'data/db', 'false', 'sqlite', 'true']

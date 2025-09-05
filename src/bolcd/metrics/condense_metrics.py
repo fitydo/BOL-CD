@@ -125,22 +125,28 @@ def record_alert(alert):
         entity_id=alert.entity_id
     ).inc()
 
-def record_decision(decision_type: str, reason: str, alert=None):
-    """Record decision metrics"""
+def record_decision(decision_type: str, reason, alert=None):
+    """Record decision metrics.
+
+    Accepts either a plain string reason or a dict with fields like
+    {"why": "...", "edge_id": "..."}. This keeps metric labels stable.
+    """
+    reason_str = reason.get("why", "unknown") if isinstance(reason, dict) else str(reason)
     decisions_total.labels(
         decision=decision_type,
-        reason=reason
+        reason=reason_str
     ).inc()
-    
+
     if decision_type == "suppress" and alert:
+        edge_id = reason.get("edge_id", "unknown") if isinstance(reason, dict) else "unknown"
         suppress_total.labels(
             severity=alert.severity,
-            edge_id=reason.get("edge_id", "unknown")
+            edge_id=edge_id
         ).inc()
     elif decision_type == "deliver" and alert:
         deliver_total.labels(
             severity=alert.severity,
-            reason=reason.get("why", "unknown")
+            reason=reason_str
         ).inc()
 
 def record_late_replay(reason: str):

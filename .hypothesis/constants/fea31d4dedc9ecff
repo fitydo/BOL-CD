@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/app/metrics/kpi_metrics.py
+# hypothesis_version: 6.137.3
+
+['/reports', 'A', 'AB duplicates', 'AB total alerts', 'AB unique alerts', 'B', 'Backlog (untriaged)', 'Backlog ratio', 'Cost per GB (USD)', 'Cost savings (USD)', 'Ingest GB', 'MTTD median seconds', 'MTTR median seconds', 'Triage P50 seconds', 'Triage P90 seconds', 'arm', 'backlog_ratio', 'backlog_untriaged', 'bolcd_ab_duplicates', 'bolcd_ab_new_in_b', 'bolcd_backlog_ratio', 'bolcd_cost_ingest_gb', 'cost', 'cost_per_gb_usd', 'ingest_gb_A', 'ingest_gb_B', 'kpi', 'mttd_median_seconds', 'mttr_median_seconds', 'new_in_b', 'noise', 'ops', 'reduction_by_count', 'reduction_by_unique', 'risk', 'savings_usd', 'triage_p50_seconds', 'triage_p90_seconds', 'utf-8']

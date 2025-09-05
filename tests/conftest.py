@@ -2,8 +2,12 @@ import os
 import sys
 import pytest
 
-# Ensure src layout is importable
+# Ensure project root is importable so that `src` package can be resolved
 ROOT = os.path.dirname(os.path.dirname(__file__))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+    
+# Also add the inner `src` directory to support imports like `import bolcd`
 SRC = os.path.join(ROOT, "src")
 if SRC not in sys.path:
     sys.path.insert(0, SRC)

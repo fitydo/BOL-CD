@@ -2,6 +2,7 @@
 Condensed Alert API with Late Replay Support
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from datetime import datetime
@@ -58,7 +59,7 @@ def list_alerts(
     limit: int = Query(100, le=1000),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-    auth: dict = Depends(require_scope({"condensed", "full", "delta", "admin"}))
+    auth: dict = Depends(get_current_scope)
 ):
     """
     List alerts based on view type
@@ -67,6 +68,13 @@ def list_alerts(
     - delta: Alert IDs by decision type
     """
     
+    # Authorization by view
+    scope = auth.get("scope")
+    if view == "full" and scope not in {"admin", "full"}:
+        raise HTTPException(status_code=403, detail="Full view requires admin/full scope")
+    if view in {"condensed", "delta"} and scope not in {"condensed", "admin", "full", "delta"}:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
     # Base query for decisions
     q_dec = db.query(DecisionRecord)
     
@@ -108,11 +116,14 @@ def list_alerts(
         q_alerts = q_alerts.filter(Alert.entity_id == entity_id)
     
     alerts = q_alerts.all()
-    
+    serialized = [serialize_alert(a) for a in alerts]
+
     return {
         "view": view,
         "count": len(alerts),
-        "items": [serialize_alert(a) for a in alerts],
+        "items": serialized,
+        # Backward-compat: some clients expect "alerts"
+        "alerts": serialized,
         "meta": {
             "limit": limit,
             "offset": offset,
@@ -155,18 +166,16 @@ def list_late_replay(
             "delivered": item.delivered
         })
     
-    # Set header to indicate late delivery
-    return Response(
-        content={
-            "count": len(response_items),
-            "items": response_items,
-            "meta": {
-                "late_delivery": True,
-                "scope": auth["scope"]
-            }
-        },
-        headers={"X-Delivered-Late": "true"}
-    )
+    # Set header to indicate late delivery and return JSON
+    payload = {
+        "count": len(response_items),
+        "items": response_items,
+        "meta": {
+            "late_delivery": True,
+            "scope": auth["scope"]
+        }
+    }
+    return JSONResponse(content=payload, headers={"X-Delivered-Late": "true"})
 
 @router.get("/{alert_id}/explain")
 def explain_decision(
@@ -255,7 +264,7 @@ def explain_decision(
         headers["X-Edge-Id"] = suppressed.edge_id
         headers["X-Q-Value"] = str(decision.reason.get("q_value", ""))
     
-    return Response(content=response, headers=headers)
+    return JSONResponse(content=response, headers=headers)
 
 @router.get("/stats")
 def get_statistics(

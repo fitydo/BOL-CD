@@ -58,3 +58,14 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Create the name of the job service account to use
+*/}}
+{{- define "bolcd.jobsServiceAccountName" -}}
+{{- if .Values.jobServiceAccount.create }}
+{{- default (printf "%s-jobs" (include "bolcd.fullname" .)) .Values.jobServiceAccount.name }}
+{{- else }}
+{{- default "default" .Values.jobServiceAccount.name }}
+{{- end }}
+{{- end }}

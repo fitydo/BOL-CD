@@ -1,15 +1,21 @@
 """
 Tests for Condensed Alert API
 """
+import os
 import pytest
 from datetime import datetime, timedelta
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.bolcd.api.main import app
-from src.bolcd.db import get_db
+# Configure API keys before importing the app
+os.environ["BOLCD_API_KEYS"] = "admin:demo-key-admin,condensed:demo-key-condensed,full:demo-key-full,ingest:demo-key-ingest"
+os.environ["BOLCD_RATE_LIMIT_ENABLED"] = "0"
+os.environ["BOLCD_HASH_METHOD"] = "plain"  # Use plain keys for testing
+
+# Import database models first
 from src.bolcd.models.condense import Base, Alert, DecisionRecord, Suppressed
+from src.bolcd.db import get_db
 
 # Test database
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -23,6 +29,8 @@ def override_get_db():
     finally:
         db.close()
 
+# Now import app after environment is set
+from src.bolcd.api.main import app
 app.dependency_overrides[get_db] = override_get_db
 
 # Create test client
