@@ -42,8 +42,9 @@ jobs:
       - name: Schemathesis (ASGI fuzz tests)
         run: |
           pip install schemathesis
+          export PYTHONPATH="${PYTHONPATH}:src"
           schemathesis run api/openapi.yaml \
-            --asgi-app=bolcd.api.app:app \
+            --app=bolcd.api.app:app \
             --checks all \
             --hypothesis-deadline=None \
             --hypothesis-max-examples=50
