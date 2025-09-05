@@ -16,6 +16,9 @@ COPY configs ./configs
 COPY scripts ./scripts
 COPY src ./src
 
+# Ensure required runtime scripts exist (build-time assertion)
+RUN test -f /app/scripts/fetch_data.py && test -f /app/scripts/ab_report.py
+
 # Runtime image
 FROM python:3.11-slim AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 \
