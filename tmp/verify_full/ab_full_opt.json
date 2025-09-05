@@ -1,0 +1,26 @@
+{
+  "date": "full_opt",
+  "dup_key": [
+    "rule_id",
+    "entity_id",
+    "time_bucket"
+  ],
+  "bucket_minutes": 60,
+  "A": {
+    "total": 347,
+    "unique": 111,
+    "duplicates": 236,
+    "entities": 10,
+    "rules": 38
+  },
+  "B": {
+    "total": 144,
+    "unique": 46,
+    "duplicates": 98,
+    "entities": 9,
+    "rules": 22
+  },
+  "reduction_by_count": 0.5850144092219021,
+  "reduction_by_unique": 0.5855855855855856,
+  "new_in_b": 46
+}

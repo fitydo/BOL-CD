@@ -1,0 +1,26 @@
+{
+  "date": "gated_0.3_0.3_0.1",
+  "dup_key": [
+    "rule_id",
+    "entity_id",
+    "time_bucket"
+  ],
+  "bucket_minutes": 60,
+  "A": {
+    "total": 28,
+    "unique": 10,
+    "duplicates": 18,
+    "entities": 8,
+    "rules": 6
+  },
+  "B": {
+    "total": 72,
+    "unique": 25,
+    "duplicates": 47,
+    "entities": 10,
+    "rules": 7
+  },
+  "reduction_by_count": -1.5714285714285714,
+  "reduction_by_unique": -1.5,
+  "new_in_b": 25
+}

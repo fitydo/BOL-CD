@@ -58,7 +58,7 @@ class ABOptimizer:
         
         return features
     
-    def calculate_suppression_score(self, event: Dict, features: Dict) -> float:
+    def calculate_suppression_score(self, event: Dict, features: Dict, cap_high: float, cap_critical: float) -> float:
         """イベントの抑制スコアを計算（高スコア = 抑制すべき）"""
         score = 0.0
         
@@ -95,8 +95,14 @@ class ABOptimizer:
         
         # 4. 重要度による調整
         severity_scores = {'low': 0.8, 'medium': 0.5, 'high': 0.2, 'critical': 0.1}
-        severity_multiplier = severity_scores.get(str(severity).lower(), 0.5)
+        severity_str = str(severity).lower()
+        severity_multiplier = severity_scores.get(severity_str, 0.5)
         score *= severity_multiplier  # 重要度が高いイベントは抑制を控える
+        # 重要度による上限（抑制スコアのキャップ）
+        if severity_str == 'critical':
+            score = min(score, cap_critical)
+        elif severity_str == 'high':
+            score = min(score, cap_high)
         
         # 5. 学習済みパターンによる調整
         if pattern in self.learned_patterns:
@@ -149,14 +155,14 @@ class ABOptimizer:
         
         return similar_count
     
-    def optimize_suppression(self, events: List[Dict], target_reduction: float = 0.6) -> Tuple[List[Dict], List[Dict], Dict]:
+    def optimize_suppression(self, events: List[Dict], target_reduction: float = 0.6, cap_high: float = 0.25, cap_critical: float = 0.15) -> Tuple[List[Dict], List[Dict], Dict]:
         """最適な抑制を実行"""
         features = self.extract_features(events)
         
         # 各イベントに抑制スコアを計算
         scored_events = []
         for event in events:
-            score = self.calculate_suppression_score(event, features)
+            score = self.calculate_suppression_score(event, features, cap_high=cap_high, cap_critical=cap_critical)
             scored_events.append((score, event))
         
         # スコアでソート（高スコアから）
@@ -168,18 +174,42 @@ class ABOptimizer:
         suppressed_events = []
         passed_events = []
         
-        # スコア閾値を動的に調整
-        score_threshold = 0.05 if target_reduction > 0.5 else 0.3
+        # スコア閾値を動的に調整（修正：閾値を適切に設定）
+        # スコアの実際の分布に基づいて閾値を決定
+        if len(scored_events) > 0:
+            scores_only = [s for s, _ in scored_events]
+            # 目標削減率を達成するための分位点を閾値とする
+            if target_suppress_count < len(scores_only):
+                score_threshold = sorted(scores_only, reverse=True)[min(target_suppress_count, len(scores_only)-1)]
+                score_threshold = max(0.01, score_threshold * 0.9)  # 少し緩和
+            else:
+                score_threshold = 0.01
+        else:
+            score_threshold = 0.05
         
         for i, (score, event) in enumerate(scored_events):
-            if i < target_suppress_count and score > score_threshold:  # 動的閾値で抑制
-                event['_suppression_score'] = score
-                event['_suppressed'] = True
-                suppressed_events.append(event)
+            severity = str(event.get('severity', '')).lower()
+            # High/Criticalは厳しく制限
+            if severity in ['critical', 'high']:
+                # High/Criticalはスコアが非常に高い場合のみ抑制
+                if i < target_suppress_count and score > max(score_threshold * 2, cap_critical if severity == 'critical' else cap_high):
+                    event['_suppression_score'] = score
+                    event['_suppressed'] = True
+                    suppressed_events.append(event)
+                else:
+                    event['_suppression_score'] = score
+                    event['_suppressed'] = False
+                    passed_events.append(event)
             else:
-                event['_suppression_score'] = score
-                event['_suppressed'] = False
-                passed_events.append(event)
+                # Low/Mediumは通常の閾値で判定
+                if i < target_suppress_count and score > score_threshold:
+                    event['_suppression_score'] = score
+                    event['_suppressed'] = True
+                    suppressed_events.append(event)
+                else:
+                    event['_suppression_score'] = score
+                    event['_suppressed'] = False
+                    passed_events.append(event)
         
         # パターンを学習
         for event in suppressed_events:
@@ -290,6 +320,8 @@ def main():
                         help='Target reduction rate (0-1)')
     parser.add_argument('--rules-output', default='config/optimized_rules.json',
                         help='Output file for generated rules')
+    parser.add_argument('--cap-high', type=float, default=0.25, help='Score cap for HIGH severity')
+    parser.add_argument('--cap-critical', type=float, default=0.15, help='Score cap for CRITICAL severity')
     
     args = parser.parse_args()
     
@@ -308,7 +340,9 @@ def main():
     
     # 最適化を実行
     print("\n🧠 機械学習による最適化を実行中...")
-    passed_events, suppressed_events, stats = optimizer.optimize_suppression(events, args.target_reduction)
+    passed_events, suppressed_events, stats = optimizer.optimize_suppression(
+        events, args.target_reduction, cap_high=args.cap_high, cap_critical=args.cap_critical
+    )
     
     # 結果を表示
     print("\n" + "="*60)

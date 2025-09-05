@@ -1,0 +1,26 @@
+{
+  "date": "opt_nocap",
+  "dup_key": [
+    "rule_id",
+    "entity_id",
+    "time_bucket"
+  ],
+  "bucket_minutes": 60,
+  "A": {
+    "total": 40,
+    "unique": 16,
+    "duplicates": 24,
+    "entities": 8,
+    "rules": 7
+  },
+  "B": {
+    "total": 60,
+    "unique": 19,
+    "duplicates": 41,
+    "entities": 9,
+    "rules": 7
+  },
+  "reduction_by_count": -0.5,
+  "reduction_by_unique": -0.1875,
+  "new_in_b": 19
+}

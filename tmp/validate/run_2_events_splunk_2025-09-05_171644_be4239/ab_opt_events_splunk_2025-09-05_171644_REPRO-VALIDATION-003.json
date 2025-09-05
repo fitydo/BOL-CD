@@ -1,0 +1,26 @@
+{
+  "date": "opt_events_splunk_2025-09-05_171644_REPRO-VALIDATION-003",
+  "dup_key": [
+    "rule_id",
+    "entity_id",
+    "time_bucket"
+  ],
+  "bucket_minutes": 60,
+  "A": {
+    "total": 56,
+    "unique": 22,
+    "duplicates": 34,
+    "entities": 9,
+    "rules": 8
+  },
+  "B": {
+    "total": 21,
+    "unique": 9,
+    "duplicates": 12,
+    "entities": 6,
+    "rules": 5
+  },
+  "reduction_by_count": 0.625,
+  "reduction_by_unique": 0.5909090909090909,
+  "new_in_b": 9
+}

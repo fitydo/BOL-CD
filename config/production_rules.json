@@ -1,14 +1,266 @@
 {
   "version": "2.0",
-  "timestamp": "2025-09-05T17:24:24.990402",
-  "suppression_rules": [],
+  "timestamp": "2025-09-05T17:57:43.526933",
+  "suppression_rules": [
+    {
+      "pattern": "web-prod-01:RULE-0888",
+      "entity": "web-prod-01",
+      "rule": "RULE-0888",
+      "min_count": 2,
+      "window": 3600,
+      "confidence": 0.02
+    },
+    {
+      "pattern": "web-prod-02:RULE-0241",
+      "entity": "web-prod-02",
+      "rule": "RULE-0241",
+      "min_count": 2,
+      "window": 3600,
+      "confidence": 0.02
+    },
+    {
+      "pattern": "db-master-01:RULE-0738",
+      "entity": "db-master-01",
+      "rule": "RULE-0738",
+      "min_count": 2,
+      "window": 3600,
+      "confidence": 0.02
+    },
+    {
+      "pattern": "db-slave-01:RULE-0215",
+      "entity": "db-slave-01",
+      "rule": "RULE-0215",
+      "min_count": 2,
+      "window": 3600,
+      "confidence": 0.02
+    },
+    {
+      "pattern": "app-server-01:RULE-0004",
+      "entity": "app-server-01",
+      "rule": "RULE-0004",
+      "min_count": 2,
+      "window": 3600,
+      "confidence": 0.02
+    },
+    {
+      "pattern": "app-server-02:RULE-0836",
+      "entity": "app-server-02",
+      "rule": "RULE-0836",
+      "min_count": 2,
+      "window": 3600,
+      "confidence": 0.02
+    },
+    {
+      "pattern": "proxy-01:RULE-0686",
+      "entity": "proxy-01",
+      "rule": "RULE-0686",
+      "min_count": 2,
+      "window": 3600,
+      "confidence": 0.02
+    },
+    {
+      "pattern": "proxy-02:RULE-0907",
+      "entity": "proxy-02",
+      "rule": "RULE-0907",
+      "min_count": 2,
+      "window": 3600,
+      "confidence": 0.02
+    },
+    {
+      "pattern": "mail-server-01:RULE-0888",
+      "entity": "mail-server-01",
+      "rule": "RULE-0888",
+      "min_count": 2,
+      "window": 3600,
+      "confidence": 0.02
+    },
+    {
+      "pattern": "file-server-01:RULE-0241",
+      "entity": "file-server-01",
+      "rule": "RULE-0241",
+      "min_count": 2,
+      "window": 3600,
+      "confidence": 0.02
+    }
+  ],
   "threshold_rules": [
     {
-      "frequency_threshold": 0.030000000000000023,
+      "frequency_threshold": 0.007722222222222194,
       "burst_threshold": 4.999994999699275e-07,
       "similarity_threshold": 0.0,
       "action": "suppress_if_all_exceed"
     }
   ],
-  "ensemble_rules": []
+  "ensemble_rules": [
+    {
+      "entity": "proxy-02",
+      "rules": [
+        "RULE-0241",
+        "RULE-0624",
+        "RULE-0719",
+        "RULE-0547",
+        "RULE-0907",
+        "RULE-0810",
+        "RULE-0735",
+        "RULE-0549",
+        "RULE-0215",
+        "RULE-0836"
+      ],
+      "threshold": 5,
+      "window": 3600,
+      "action": "group_throttle"
+    },
+    {
+      "entity": "web-prod-02",
+      "rules": [
+        "RULE-0241",
+        "RULE-0188",
+        "RULE-0907",
+        "RULE-0810",
+        "RULE-0549",
+        "RULE-0993",
+        "RULE-0689",
+        "RULE-0215",
+        "RULE-0836"
+      ],
+      "threshold": 4,
+      "window": 3600,
+      "action": "group_throttle"
+    },
+    {
+      "entity": "db-master-01",
+      "rules": [
+        "RULE-0969",
+        "RULE-0004",
+        "RULE-0135",
+        "RULE-0532",
+        "RULE-0738",
+        "RULE-0397",
+        "RULE-0686",
+        "RULE-0888",
+        "RULE-0305"
+      ],
+      "threshold": 4,
+      "window": 3600,
+      "action": "group_throttle"
+    },
+    {
+      "entity": "db-slave-01",
+      "rules": [
+        "RULE-0950",
+        "RULE-0256",
+        "RULE-0241",
+        "RULE-0188",
+        "RULE-0907",
+        "RULE-0549",
+        "RULE-0993",
+        "RULE-0215",
+        "RULE-0836"
+      ],
+      "threshold": 4,
+      "window": 3600,
+      "action": "group_throttle"
+    },
+    {
+      "entity": "app-server-01",
+      "rules": [
+        "RULE-0663",
+        "RULE-0004",
+        "RULE-0532",
+        "RULE-0838",
+        "RULE-0738",
+        "RULE-0686",
+        "RULE-0888",
+        "RULE-0315",
+        "RULE-0305"
+      ],
+      "threshold": 4,
+      "window": 3600,
+      "action": "group_throttle"
+    },
+    {
+      "entity": "app-server-02",
+      "rules": [
+        "RULE-0950",
+        "RULE-0241",
+        "RULE-0624",
+        "RULE-0719",
+        "RULE-0547",
+        "RULE-0907",
+        "RULE-0549",
+        "RULE-0215",
+        "RULE-0836"
+      ],
+      "threshold": 4,
+      "window": 3600,
+      "action": "group_throttle"
+    },
+    {
+      "entity": "proxy-01",
+      "rules": [
+        "RULE-0663",
+        "RULE-0004",
+        "RULE-0406",
+        "RULE-0825",
+        "RULE-0738",
+        "RULE-0686",
+        "RULE-0888",
+        "RULE-0315",
+        "RULE-0462"
+      ],
+      "threshold": 4,
+      "window": 3600,
+      "action": "group_throttle"
+    },
+    {
+      "entity": "mail-server-01",
+      "rules": [
+        "RULE-0969",
+        "RULE-0004",
+        "RULE-0135",
+        "RULE-0571",
+        "RULE-0406",
+        "RULE-0825",
+        "RULE-0738",
+        "RULE-0686",
+        "RULE-0888"
+      ],
+      "threshold": 4,
+      "window": 3600,
+      "action": "group_throttle"
+    },
+    {
+      "entity": "file-server-01",
+      "rules": [
+        "RULE-0241",
+        "RULE-0188",
+        "RULE-0907",
+        "RULE-0810",
+        "RULE-0549",
+        "RULE-0993",
+        "RULE-0689",
+        "RULE-0215",
+        "RULE-0836"
+      ],
+      "threshold": 4,
+      "window": 3600,
+      "action": "group_throttle"
+    },
+    {
+      "entity": "web-prod-01",
+      "rules": [
+        "RULE-0969",
+        "RULE-0004",
+        "RULE-0135",
+        "RULE-0406",
+        "RULE-0825",
+        "RULE-0738",
+        "RULE-0686",
+        "RULE-0888"
+      ],
+      "threshold": 4,
+      "window": 3600,
+      "action": "group_throttle"
+    }
+  ]
 }

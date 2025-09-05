@@ -1,33 +1,37 @@
 {
-  "timestamp": "2025-09-05T17:13:04.229243",
+  "timestamp": "2025-09-05T17:57:26.013979",
   "target_reduction_rate": 0.6,
   "threshold_adjustments": {
-    "Privilege_Escalation": {
-      "rule": "critical",
-      "multiplier": 0.6,
-      "min_interval": 300
-    },
-    "Malware_Detected": {
-      "rule": "critical",
-      "multiplier": 0.6,
+    "Unauthorized_Access": {
+      "rule": "medium",
+      "multiplier": 0.7,
       "min_interval": 300
     }
   },
-  "suppression_rules": [],
+  "suppression_rules": [
+    {
+      "pattern": "Port_Scan_Detected:low",
+      "entity": "Port_Scan_Detected",
+      "rule": "low",
+      "window": 3600,
+      "threshold": 3,
+      "suppress_duration": 1800
+    }
+  ],
   "false_positive_filters": [
     {
-      "pattern": "web-prod-01:RULE-0888",
-      "confidence": 0.8500000000000001,
+      "pattern": "web-prod-01:RULE-0601",
+      "confidence": 0.8,
       "auto_suppress": true
     },
     {
       "pattern": "web-prod-01:Failed_SSH_Login",
-      "confidence": 0.8500000000000001,
+      "confidence": 0.8,
       "auto_suppress": true
     },
     {
-      "pattern": "web-prod-02:RULE-0241",
-      "confidence": 0.8500000000000001,
+      "pattern": "web-prod-02:RULE-0619",
+      "confidence": 0.8,
       "auto_suppress": true
     }
   ]
