@@ -4,7 +4,6 @@ SIEM Connector - Real-time event streaming from Splunk/Sentinel/OpenSearch
 """
 import json
 import time
-import os
 from datetime import datetime, timedelta
 from pathlib import Path
 import argparse

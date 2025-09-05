@@ -8,12 +8,9 @@ AB Validation Harness - 再現性/有意性の検証
 """
 import argparse
 import json
-import os
 import subprocess
 import sys
-import time
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple
 import hashlib
@@ -208,7 +205,6 @@ def compute_additional_metrics(a_path: Path, b_orig_path: Path, b_variant_path: 
     weighted_reduction = (wA - wB) / wA if wA > 0 else 0.0
 
     # 誤抑制率（重大度の高いイベントがBでどれだけ削減されたか）
-    severe = {"high", "critical", "4", "5"}
     def _sev_level(e):
         s = str(e.get("severity", e.get("AlertSeverity", e.get("event.severity", "")))).lower()
         if any(k in s for k in ["critical", "5"]):

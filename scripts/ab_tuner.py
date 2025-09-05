@@ -5,9 +5,9 @@ A/B Test Tuner - 抑制ルールと閾値の自動チューニング
 import json
 import argparse
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Tuple
 from collections import defaultdict, deque
-from datetime import datetime, timedelta
+from datetime import datetime
 import hashlib
 
 class ABTuner:
@@ -186,7 +186,6 @@ class ABTuner:
         
         if current_reduction < target_reduction:
             # 削減率が目標に達していない場合、ルールを強化
-            gap = target_reduction - current_reduction
             
             # 閾値をさらに緩和
             for key in self.config['threshold_adjustments']:
@@ -264,7 +263,7 @@ def main():
             'current_reduction_rate': stats['reduction_rate'],
             'target_reduction_rate': 0.6
         }
-        optimized_config = tuner.optimize_config(feedback)
+        tuner.optimize_config(feedback)
         print(f"✅ 最適化完了: {args.config}")
         
         # 再度処理して改善を確認

@@ -5,9 +5,7 @@ Robust A/B Optimizer - 再現性のある削減率最適化
 """
 import json
 import argparse
-import hashlib
-from pathlib import Path
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List
 from collections import Counter, defaultdict
 from datetime import datetime
 import numpy as np
@@ -247,7 +245,7 @@ class RobustOptimizer:
             
             # テストデータで評価
             test_events = [events[i] for i in test_indices]
-            test_features = self.extract_robust_features(test_events)
+            # test_features = self.extract_robust_features(test_events)  # 未使用
             
             # 簡易的な評価（実際の抑制率）
             test_suppression_rate = train_result['suppression_rate']
@@ -393,7 +391,7 @@ def main():
     
     # 最終的な学習結果
     final_result = optimizer.train_ensemble(events, target_reduction=args.target_reduction)
-    print(f"\n📈 最終モデルの性能:")
+    print("\n📈 最終モデルの性能:")
     print(f"  削減率: {final_result['suppression_rate']*100:.1f}%")
     print(f"  アンサンブル合意度: {final_result['ensemble_agreement']:.3f}")
     

@@ -4,12 +4,10 @@ A/B Test Optimizer - 機械学習による削減率最適化
 """
 import json
 import argparse
-from pathlib import Path
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple
 from collections import Counter, defaultdict
 import numpy as np
-from datetime import datetime, timedelta
-import hashlib
+from datetime import datetime
 
 class ABOptimizer:
     def __init__(self):
@@ -51,7 +49,7 @@ class ABOptimizer:
                     ts = datetime.fromisoformat(event['timestamp'].replace('Z', '+00:00'))
                     hour_key = ts.strftime('%Y-%m-%d-%H')
                     features['time_clusters'][hour_key].append(event)
-                except:
+                except Exception:
                     pass
             
             # パターンシーケンスを記録
@@ -72,7 +70,7 @@ class ABOptimizer:
         # 1. 頻度ベースのスコア
         entity_freq = features['entity_counts'][entity]
         rule_freq = features['rule_counts'][rule]
-        sig_freq = features['signature_counts'][signature]
+        _ = features['signature_counts'][signature]
         
         total_events = sum(features['entity_counts'].values())
         
@@ -228,7 +226,7 @@ class ABOptimizer:
                     ts = datetime.fromisoformat(event['timestamp'].replace('Z', '+00:00'))
                     hour = ts.hour
                     time_patterns[pattern].append(hour)
-                except:
+                except Exception:
                     pass
         
         # 1. 複合ルール（高頻度パターン）
@@ -334,7 +332,7 @@ def main():
         for event in suppressed_events:
             f.write(json.dumps(event, ensure_ascii=False) + '\n')
     
-    print(f"\n💾 最適化済みイベントを保存:")
+    print("\n💾 最適化済みイベントを保存:")
     print(f"   通過: {args.output_passed}")
     print(f"   抑制: {args.output_suppressed}")
     

@@ -6,8 +6,8 @@ import json
 import subprocess
 import argparse
 from pathlib import Path
-from typing import Dict, List, Tuple
-from datetime import datetime, timedelta
+from typing import Dict, Tuple
+from datetime import datetime
 import numpy as np
 
 class ABMLPipeline:
@@ -26,7 +26,6 @@ class ABMLPipeline:
         print(f"📥 データ収集中 (source={source}, hours={hours})...")
         
         # SIEMからデータ取得
-        output_file = Path(f"data/raw/pipeline_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jsonl")
         cmd = f"python scripts/siem_connector.py --source {source} --mode fetch"
         returncode, stdout, stderr = self.run_command(cmd)
         
@@ -44,7 +43,7 @@ class ABMLPipeline:
     
     def feature_engineering(self, input_file: Path) -> Dict:
         """特徴量エンジニアリング"""
-        print(f"🔧 特徴量エンジニアリング中...")
+        print("🔧 特徴量エンジニアリング中...")
         
         events = []
         with open(input_file, 'r') as f:
@@ -81,7 +80,7 @@ class ABMLPipeline:
     
     def train_model(self, input_file: Path) -> Dict:
         """モデル学習フェーズ"""
-        print(f"🧠 モデル学習中...")
+        print("🧠 モデル学習中...")
         
         # Robust Optimizerで学習
         cmd = f"python scripts/ab_robust_optimizer.py --input {input_file} --target-reduction 0.5"
@@ -102,21 +101,21 @@ class ABMLPipeline:
                     rate_str = parts[-1].strip().replace('%', '')
                     try:
                         metrics['reduction_rate'] = float(rate_str) / 100
-                    except:
+                    except Exception:
                         pass
             elif 'アンサンブル合意度:' in line:
                 parts = line.split(':')
                 if len(parts) >= 2:
                     try:
                         metrics['ensemble_agreement'] = float(parts[-1].strip())
-                    except:
+                    except Exception:
                         pass
         
         return metrics
     
     def apply_rules(self, input_file: Path, rules_file: Path) -> Tuple[Path, Dict]:
         """ルール適用フェーズ"""
-        print(f"📋 ルール適用中...")
+        print("📋 ルール適用中...")
         
         # ルールを読み込み
         with open(rules_file, 'r') as f:
@@ -167,7 +166,7 @@ class ABMLPipeline:
     
     def evaluate(self, metrics: Dict) -> Dict:
         """評価フェーズ"""
-        print(f"📊 パフォーマンス評価中...")
+        print("📊 パフォーマンス評価中...")
         
         evaluation = {
             'timestamp': datetime.now().isoformat(),

@@ -5,10 +5,9 @@ A/B Test Analyzer - データ解析と削減率向上のための分析ツール
 import json
 import argparse
 from pathlib import Path
-from collections import Counter, defaultdict
-from typing import Dict, List, Tuple, Any
-import numpy as np
-from datetime import datetime, timedelta
+from collections import Counter
+from typing import Dict, List
+from datetime import datetime
 
 class ABAnalyzer:
     def __init__(self, data_dir: str = "data/ab", reports_dir: str = "reports"):
