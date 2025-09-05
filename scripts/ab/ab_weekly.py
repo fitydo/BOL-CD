@@ -16,8 +16,12 @@ def main() -> int:
     n = 0
     for p in days:
         data = json.loads(p.read_text(encoding='utf-8'))
-        totalA += data["A"]["total"]; uniqA += data["A"]["unique"]; dupA += data["A"]["duplicates"]
-        totalB += data["B"]["total"]; uniqB += data["B"]["unique"]; dupB += data["B"]["duplicates"]
+        totalA += data["A"]["total"]
+        uniqA += data["A"]["unique"]
+        dupA += data["A"]["duplicates"]
+        totalB += data["B"]["total"]
+        uniqB += data["B"]["unique"]
+        dupB += data["B"]["duplicates"]
         newB += data.get("new_in_b", 0)
         n += 1
     result = {

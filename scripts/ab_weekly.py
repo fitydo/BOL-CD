@@ -4,9 +4,9 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Sequence, Tuple
 
 
 def read_jsonl(path: Path) -> Iterable[Dict[str, Any]]:
