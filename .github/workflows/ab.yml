@@ -1,0 +1,20 @@
+name: ab-pipeline
+on:
+  pull_request:
+    paths:
+      - 'scripts/ab/**'
+      - 'docs/ab-testing/**'
+      - 'tests/ab/**'
+      - 'deploy/helm/**'
+      - 'Makefile'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: pytest -q tests/ab/test_ab_pipeline.py
+

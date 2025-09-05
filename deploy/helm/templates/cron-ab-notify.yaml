@@ -42,9 +42,10 @@ spec:
                   echo "posting ${FILE} to Slack webhook"
                   # Convert Markdown to simple text (basic): strip table pipes
                   BODY=$(sed 's/|//g' "$FILE")
-                  # Post to slack/msteams-compatible webhook
+                  # Post to slack/msteams-compatible webhook (POSIX sh compatible)
+                  BODY_JSON=$(printf '%s' "${BODY}" | jq -Rs '{text: .}')
                   curl -sS -X POST -H 'Content-Type: application/json' \
-                    --data "$(jq -Rs '{text: .}' <<<"${BODY}")" \
+                    --data "${BODY_JSON}" \
                     "${WEBHOOK}"
               volumeMounts:
                 - name: reports
