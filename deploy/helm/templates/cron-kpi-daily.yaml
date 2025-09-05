@@ -1,0 +1,55 @@
+{{- if .Values.kpi.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "bolcd.fullname" . }}-kpi-daily
+  labels:
+    app: {{ include "bolcd.name" . }}
+spec:
+  schedule: {{ .Values.kpi.schedule | default "15 3 * * *" | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: {{ include "bolcd.name" . }}
+        spec:
+          serviceAccountName: {{ include "bolcd.jobsServiceAccountName" . }}
+          restartPolicy: OnFailure
+          containers:
+            - name: kpi-daily
+              image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+              imagePullPolicy: IfNotPresent
+              command: ["/bin/sh","-lc"]
+              args:
+                - |
+                  set -e
+                  python scripts/kpi/compute_kpi.py \
+                    --reports-dir {{ .Values.kpi.reportsDir | default "/reports" }} \
+                    {{- if .Values.kpi.costPerGbUSD }} --cost-per-gb-usd {{ .Values.kpi.costPerGbUSD }} {{- end }} \
+                    {{- if .Values.kpi.ingestAGB }} --ingest-a-gb {{ .Values.kpi.ingestAGB }} {{- end }} \
+                    {{- if .Values.kpi.ingestBGB }} --ingest-b-gb {{ .Values.kpi.ingestBGB }} {{- end }}
+              volumeMounts:
+                - name: reports
+                  mountPath: {{ .Values.kpi.reportsDir | default "/reports" }}
+              {{- if .Values.secretEnv }}
+              env:
+                {{- range .Values.secretEnv }}
+                - name: {{ .name | quote }}
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .secretName | quote }}
+                      key: {{ .secretKey | quote }}
+                {{- end }}
+              {{- end }}
+          volumes:
+            - name: reports
+              {{- if .Values.reportsPVC.enabled }}
+              persistentVolumeClaim:
+                claimName: {{ .Values.reportsPVC.existingClaim | default (include "bolcd.fullname" .) }}-reports
+              {{- else }}
+              emptyDir: {}
+              {{- end }}
+{{- end }}

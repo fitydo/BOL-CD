@@ -1,0 +1,139 @@
+{{- if .Values.monitor.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bolcd.fullname" . }}-dashboard-kpi
+  labels:
+    app: {{ include "bolcd.name" . }}
+    grafana_dashboard: "1"
+  annotations:
+    grafana_folder: {{ .Values.monitor.grafana.folder | default "Observability" | quote }}
+data:
+  bolcd-kpi.json: |
+    {
+      "title": "BOL-CD KPI",
+      "uid": "bolcd-kpi",
+      "tags": ["bolcd", "kpi"],
+      "timezone": "browser",
+      "schemaVersion": 38,
+      "version": 1,
+      "refresh": "1m",
+      "time": {"from": "now-7d", "to": "now"},
+      "panels": [
+        {
+          "type": "stat",
+          "title": "削減率(count)",
+          "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+          "targets": [{"expr": "bolcd_ab_reduction_by_count", "refId": "A"}],
+          "options": {"reduceOptions": {"calcs": ["lastNotNull"]}, "orientation": "horizontal", "textMode": "auto"},
+          "fieldConfig": {"defaults": {"unit": "percentunit"}}
+        },
+        {
+          "type": "stat",
+          "title": "削減率(unique)",
+          "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+          "targets": [{"expr": "bolcd_ab_reduction_by_unique", "refId": "A"}],
+          "options": {"reduceOptions": {"calcs": ["lastNotNull"]}},
+          "fieldConfig": {"defaults": {"unit": "percentunit"}}
+        },
+        {
+          "type": "stat",
+          "title": "Bのみ新規ユニーク",
+          "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+          "targets": [{"expr": "bolcd_ab_new_in_b", "refId": "A"}],
+          "options": {"reduceOptions": {"calcs": ["lastNotNull"]}}
+        },
+        {
+          "type": "timeseries",
+          "title": "A/B 総アラート（日次）",
+          "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+          "targets": [
+            {"expr": "bolcd_ab_total_alerts{arm=\"A\"}", "refId": "A", "legendFormat": "A total"},
+            {"expr": "bolcd_ab_total_alerts{arm=\"B\"}", "refId": "B", "legendFormat": "B total"}
+          ],
+          "fieldConfig": {"defaults": {"unit": "short"}}
+        },
+        {
+          "type": "timeseries",
+          "title": "A/B ユニーク/重複（日次）",
+          "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+          "targets": [
+            {"expr": "bolcd_ab_unique_alerts{arm=\"A\"}", "refId": "A", "legendFormat": "A unique"},
+            {"expr": "bolcd_ab_unique_alerts{arm=\"B\"}", "refId": "B", "legendFormat": "B unique"},
+            {"expr": "bolcd_ab_duplicates{arm=\"A\"}", "refId": "C", "legendFormat": "A duplicates"},
+            {"expr": "bolcd_ab_duplicates{arm=\"B\"}", "refId": "D", "legendFormat": "B duplicates"}
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "L1トリアージ P50(s)",
+          "gridPos": {"x": 0, "y": 12, "w": 6, "h": 4},
+          "targets": [{"expr": "bolcd_triage_p50_seconds", "refId": "A"}],
+          "fieldConfig": {"defaults": {"unit": "s"}}
+        },
+        {
+          "type": "stat",
+          "title": "L1トリアージ P90(s)",
+          "gridPos": {"x": 6, "y": 12, "w": 6, "h": 4},
+          "targets": [{"expr": "bolcd_triage_p90_seconds", "refId": "A"}],
+          "fieldConfig": {"defaults": {"unit": "s"}}
+        },
+        {
+          "type": "timeseries",
+          "title": "処理ケース件数（日次）",
+          "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
+          "targets": [{"expr": "bolcd_cases_processed_daily", "refId": "A"}]
+        },
+        {
+          "type": "stat",
+          "title": "Ingest A/B (GB)",
+          "gridPos": {"x": 0, "y": 20, "w": 8, "h": 4},
+          "targets": [
+            {"expr": "bolcd_cost_ingest_gb{arm=\"A\"}", "refId": "A", "legendFormat": "A"},
+            {"expr": "bolcd_cost_ingest_gb{arm=\"B\"}", "refId": "B", "legendFormat": "B"}
+          ],
+          "fieldConfig": {"defaults": {"unit": "decgbytes"}}
+        },
+        {
+          "type": "stat",
+          "title": "$/GB と 日次節約額(USD)",
+          "gridPos": {"x": 8, "y": 20, "w": 8, "h": 4},
+          "targets": [
+            {"expr": "bolcd_cost_per_gb_usd", "refId": "A", "legendFormat": "$/GB"},
+            {"expr": "bolcd_cost_savings_usd", "refId": "B", "legendFormat": "Savings USD"}
+          ],
+          "fieldConfig": {"defaults": {"unit": "short"}}
+        },
+        {
+          "type": "timeseries",
+          "title": "Cost Savings (USD, 日次)",
+          "gridPos": {"x": 16, "y": 20, "w": 8, "h": 8},
+          "targets": [{"expr": "bolcd_cost_savings_usd", "refId": "A"}],
+          "fieldConfig": {"defaults": {"unit": "currencyUSD"}}
+        },
+        {
+          "type": "stat",
+          "title": "未処理バックログ",
+          "gridPos": {"x": 0, "y": 24, "w": 6, "h": 4},
+          "targets": [{"expr": "bolcd_backlog_untriaged", "refId": "A"}]
+        },
+        {
+          "type": "timeseries",
+          "title": "バックログ比率",
+          "gridPos": {"x": 6, "y": 24, "w": 6, "h": 8},
+          "targets": [{"expr": "bolcd_backlog_ratio", "refId": "A"}],
+          "fieldConfig": {"defaults": {"unit": "percentunit"}}
+        },
+        {
+          "type": "stat",
+          "title": "MTTD/MTTR (median, s)",
+          "gridPos": {"x": 12, "y": 28, "w": 12, "h": 4},
+          "targets": [
+            {"expr": "bolcd_mttd_median_seconds", "refId": "A", "legendFormat": "MTTD"},
+            {"expr": "bolcd_mttr_median_seconds", "refId": "B", "legendFormat": "MTTR"}
+          ],
+          "fieldConfig": {"defaults": {"unit": "s"}}
+        }
+      ]
+    }
+{{- end }}

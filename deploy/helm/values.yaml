@@ -188,6 +188,13 @@ cron:
       index: "_internal"
       # B側の除外条件（実運用では実際の抑制条件へ置換）
       exclude: "sourcetype=splunkd*"
+      # 以下は任意: CronJobだけでURL/検証を上書きしたい場合に使用
+      # url: "https://192.168.1.12:8089"
+      # verify: false
+    # 任意の追加環境変数（CronJobのab-dailyコンテナにのみ注入）
+    # extraEnv:
+    #   - name: BOLCD_SPLUNK_OWNER
+    #     value: nobody
 
   # Daily notification to Slack (optional)
   abNotify:
@@ -202,6 +209,15 @@ cron:
     enabled: false
     schedule: "30 3 * * *"
     keepDays: 14
+
+kpi:
+  enabled: false
+  schedule: "15 3 * * *"   # UTC 03:15
+  reportsDir: "/reports"
+  # Cost analysis (optional)
+  costPerGbUSD: null       # e.g., 4.3 for Sentinel PAYG
+  ingestAGB: null          # e.g., 200.0
+  ingestBGB: null          # e.g., 160.0
 
 reportsPVC:
   enabled: false

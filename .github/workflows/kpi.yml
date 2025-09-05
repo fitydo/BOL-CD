@@ -1,0 +1,26 @@
+name: kpi
+on:
+  pull_request:
+    paths:
+      - 'scripts/kpi/**'
+      - 'app/metrics/**'
+      - 'deploy/helm/**'
+      - 'docs/kpi/**'
+      - 'tests/kpi/**'
+      - 'src/bolcd/api/app.py'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: pytest -q tests/kpi/test_kpi_pipeline.py
+      - name: Helm lint
+        run: |
+          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+          chmod 700 get_helm.sh
+          ./get_helm.sh
+          helm lint deploy/helm

@@ -3,7 +3,7 @@ RELEASE ?= bolcd
 IMAGE_TAG ?=
 INGRESS_ENABLED ?= false
 
-.PHONY: preflight deploy postflight ab-run-once metrics port-forward ab-demo ab-report ab-weekly
+.PHONY: preflight deploy postflight ab-run-once metrics port-forward ab-demo ab-report ab-weekly kpi-daily kpi-test
 
 preflight:
 	@bash scripts/k8s-preflight.sh $(NS) --release $(RELEASE) || true
@@ -45,4 +45,11 @@ ab-report:
 
 ab-weekly:
 	python scripts/ab/ab_weekly.py --dir /reports --out /reports/weekly.json
+
+kpi-daily:
+	python scripts/kpi/compute_kpi.py --reports-dir /reports --date $$(date -u +"%Y-%m-%d") \
+		--ingest-a-gb $${INGEST_A_GB:-} --ingest-b-gb $${INGEST_B_GB:-} --cost-per-gb-usd $${COST_PER_GB_USD:-}
+
+kpi-test:
+	pytest -q tests/kpi/test_kpi_pipeline.py
 
