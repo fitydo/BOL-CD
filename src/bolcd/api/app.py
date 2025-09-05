@@ -108,8 +108,13 @@ def _update_ab_metrics_from_reports() -> None:
         if not candidates:
             return
         latest = max(candidates, key=lambda p: p.stat().st_mtime)
-        data = json.loads(latest.read_text(encoding="utf-8"))
-        eff = data.get("effects", {})
+        raw = latest.read_text(encoding="utf-8")
+        data = json.loads(raw)
+        # Allow effects-only JSON (when produced via tee) or full report JSON
+        if isinstance(data, dict) and all(k in data for k in ("reduction_by_count", "reduction_by_unique")):
+            eff = data
+        else:
+            eff = data.get("effects", {}) if isinstance(data, dict) else {}
         AB_REDUCTION_COUNT.set(float(eff.get("reduction_by_count", 0.0)))
         AB_REDUCTION_UNIQUE.set(float(eff.get("reduction_by_unique", 0.0)))
         AB_SUPPRESSED_COUNT.set(float(eff.get("suppressed_count", 0.0)))
@@ -230,6 +235,13 @@ async def readyz() -> Dict[str, str]:
 @app.get("/metrics")
 async def metrics() -> Response:
     _update_ab_metrics_from_reports()
+    # Update KPI metrics from reports
+    try:
+        from app.metrics.kpi_metrics import update_from_reports
+        update_from_reports(str(BOLCD_REPORTS_DIR))
+    except ImportError:
+        # KPI metrics not available
+        pass
     return Response(content=generate_latest(REGISTRY), media_type=CONTENT_TYPE_LATEST)
 
 

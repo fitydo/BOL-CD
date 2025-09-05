@@ -1,4 +1,4 @@
-{{- if and .Values.monitor.alertmanager.enabled (has "monitoring.coreos.com/v1alpha1" .Capabilities.APIVersions) }}
+{{- if and .Values.monitor.alertmanager .Values.monitor.alertmanager.enabled .Values.monitor.alertmanager.slack (has "monitoring.coreos.com/v1alpha1" .Capabilities.APIVersions) }}
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
