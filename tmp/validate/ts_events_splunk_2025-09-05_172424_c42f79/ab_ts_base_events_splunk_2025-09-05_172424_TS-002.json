@@ -1,0 +1,26 @@
+{
+  "date": "ts_base_events_splunk_2025-09-05_172424_TS-002",
+  "dup_key": [
+    "rule_id",
+    "entity_id",
+    "time_bucket"
+  ],
+  "bucket_minutes": 60,
+  "A": {
+    "total": 43,
+    "unique": 18,
+    "duplicates": 25,
+    "entities": 9,
+    "rules": 8
+  },
+  "B": {
+    "total": 57,
+    "unique": 22,
+    "duplicates": 35,
+    "entities": 9,
+    "rules": 8
+  },
+  "reduction_by_count": -0.32558139534883723,
+  "reduction_by_unique": -0.2222222222222222,
+  "new_in_b": 22
+}

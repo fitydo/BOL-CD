@@ -1,0 +1,62 @@
+# Staging environment specific values
+replicaCount: 1
+
+ingress:
+  hosts:
+    - host: bolcd-staging.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: bolcd-staging-tls
+      hosts:
+        - bolcd-staging.example.com
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+
+config:
+  monitoring:
+    loggingLevel: "DEBUG"
+  
+  policy:
+    # More conservative settings for staging
+    alpha: "0.001"
+    supportMin: "30"
+    liftMin: "2.0"
+
+postgresql:
+  primary:
+    persistence:
+      size: 5Gi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+redis:
+  replica:
+    replicaCount: 1
+  master:
+    persistence:
+      size: 4Gi
+    resources:
+      limits:
+        cpu: 250m
+        memory: 256Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi

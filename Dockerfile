@@ -1,93 +1,61 @@
-# syntax=docker/dockerfile:1
-FROM python:3.11-slim AS base
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+# Multi-stage build for BOL-CD
+FROM python:3.11-slim as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    make \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
 WORKDIR /app
 
-# Install build deps
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential && rm -rf /var/lib/apt/lists/*
+# Copy requirements first for better caching
+COPY requirements.txt .
 
-# Copy project files
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-COPY pyproject.toml README.md ./
-COPY api ./api
-COPY configs ./configs
-COPY scripts ./scripts
-COPY src ./src
+# Install Python dependencies
+RUN pip install --no-cache-dir --user -r requirements.txt
 
-# Ensure required runtime scripts exist (build-time assertion)
-RUN test -f /app/scripts/fetch_data.py && test -f /app/scripts/ab_report.py
+# Production stage
+FROM python:3.11-slim
 
-# Runtime image
-FROM python:3.11-slim AS runtime
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -r bolcd && useradd -r -g bolcd -u 1000 bolcd
+
+# Set working directory
 WORKDIR /app
 
-# Copy from build stage
-COPY --from=base /usr/local/lib/python3.11 /usr/local/lib/python3.11
-COPY --from=base /usr/local/bin /usr/local/bin
-COPY --from=base /app /app
+# Copy Python dependencies from builder
+COPY --from=builder /root/.local /home/bolcd/.local
 
-RUN groupadd -g 10001 app || true \
- && useradd -r -u 10001 -g app app || true \
- && mkdir -p /app/logs \
- && chown -R 10001:10001 /app/logs
+# Copy application code
+COPY --chown=bolcd:bolcd . .
 
-EXPOSE 8080
-ENV BOLCD_API_KEYS="" \
-    BOLCD_SPLUNK_URL="" \
-    BOLCD_SPLUNK_TOKEN="" \
-    BOLCD_SENTINEL_WORKSPACE_ID="" \
-    BOLCD_AZURE_TOKEN="" \
-    BOLCD_AZURE_SUBSCRIPTION_ID="" \
-    BOLCD_AZURE_RESOURCE_GROUP="" \
-    BOLCD_AZURE_WORKSPACE_NAME="" \
-    BOLCD_OPENSEARCH_ENDPOINT="" \
-    BOLCD_OPENSEARCH_BASIC=""
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 CMD python -c "import sys,urllib.request;\
-\n\
-\n\
-\n\
-\n\
-\n\
-\n\
-\n\
-\n\
-\n\
-\n\
-\n\
-\n\
-\n\
-\n\
-\n\
-\
-\
-\
-\n\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\
-\n\
-\
-\
-\
-\
-\
-              \n\
-try:\n    r=urllib.request.urlopen('http://127.0.0.1:8080/livez', timeout=3); sys.exit(0 if r.status==200 else 1)\nexcept Exception:\n    sys.exit(1)"
-USER 10001:10001
-CMD ["uvicorn", "bolcd.api.app:app", "--host", "0.0.0.0", "--port", "8080"]
+# Set Python path
+ENV PATH=/home/bolcd/.local/bin:$PATH
+ENV PYTHONPATH=/app:src
+
+# Create necessary directories
+RUN mkdir -p /app/logs /app/data /app/.cache && \
+    chown -R bolcd:bolcd /app
+
+# Switch to non-root user
+USER bolcd
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Expose port
+EXPOSE 8000
+
+# Default command
+CMD ["python", "-m", "uvicorn", "src.bolcd.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]

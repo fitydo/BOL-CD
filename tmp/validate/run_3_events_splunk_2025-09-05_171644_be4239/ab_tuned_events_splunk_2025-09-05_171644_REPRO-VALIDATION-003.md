@@ -2,7 +2,7 @@
 
 ## サマリ
 - A: total=56, unique=22, duplicates=34
-- B: total=44, unique=18, duplicates=26
-- 削減率(count) = 21.43%
-- 削減率(unique) = 18.18%
-- Bのみ新規ユニーク = 18
+- B: total=41, unique=17, duplicates=24
+- 削減率(count) = 26.79%
+- 削減率(unique) = 22.73%
+- Bのみ新規ユニーク = 17

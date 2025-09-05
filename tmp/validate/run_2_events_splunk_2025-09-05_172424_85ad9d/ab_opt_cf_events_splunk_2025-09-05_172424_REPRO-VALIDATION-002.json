@@ -7,10 +7,10 @@
   ],
   "bucket_minutes": 60,
   "A": {
-    "total": 26,
-    "unique": 10,
-    "duplicates": 16,
-    "entities": 6,
+    "total": 34,
+    "unique": 14,
+    "duplicates": 20,
+    "entities": 8,
     "rules": 5
   },
   "B": {
@@ -20,7 +20,7 @@
     "entities": 9,
     "rules": 8
   },
-  "reduction_by_count": -0.7692307692307693,
-  "reduction_by_unique": -0.8,
+  "reduction_by_count": -0.35294117647058826,
+  "reduction_by_unique": -0.2857142857142857,
   "new_in_b": 18
 }

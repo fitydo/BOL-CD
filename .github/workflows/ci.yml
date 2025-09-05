@@ -39,11 +39,23 @@ jobs:
       - name: Pytest
         run: pytest -q
 
+      - name: Test Condensed API
+        run: |
+          # Test the new condensed alert API endpoints
+          pytest tests/test_condensed_api.py -v
+          
+      - name: Test False Suppression Validation
+        run: |
+          # Test false suppression validator
+          python scripts/false_suppression_validator.py --test-mode
+
       - name: Schemathesis (ASGI fuzz tests)
         run: |
           pip install schemathesis
           export PYTHONPATH="${PYTHONPATH}:src"
           export BOLCD_RATE_LIMIT_ENABLED="0"
+          export BOLCD_API_KEYS="test:test-key-1,admin:admin-key-1"
+          export DB_URL="sqlite:///:memory:"
           schemathesis run api/openapi.yaml \
             --app=bolcd.api.app:app \
             --checks all \

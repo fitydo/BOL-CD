@@ -10,13 +10,14 @@ readme = "README.md"
 authors = [{ name = "BOL-CD Team" }]
 requires-python = ">=3.11"
 dependencies = []
-license = { file = "LICENSE" }
-license-files = ["LICENSE"]
+license = { text = "MIT" }
 
 [project.scripts]
 bolcd-recompute = "bolcd.cli.recompute:main"
 bolcd-bench = "bolcd.cli.bench:main"
 bolcd-writeback = "bolcd.cli.writeback:main"
+bolcd-roi = "bolcd.cli.roi:main"
+bolcd-sla = "bolcd.cli.sla:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

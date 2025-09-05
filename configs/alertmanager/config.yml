@@ -1,0 +1,162 @@
+# AlertManager configuration for BOL-CD
+
+global:
+  # SMTP configuration
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'bolcd-alerts@example.com'
+  smtp_auth_username: 'bolcd-alerts@example.com'
+  smtp_auth_password_file: '/etc/alertmanager/smtp_password'
+  
+  # Slack configuration
+  slack_api_url_file: '/etc/alertmanager/slack_webhook'
+  
+  # Default settings
+  resolve_timeout: 5m
+
+# Templates for notifications
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Route tree for alerts
+route:
+  # Default receiver
+  receiver: 'team-ops'
+  
+  # Group alerts
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  
+  # Child routes
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'team-critical'
+      group_wait: 0s
+      repeat_interval: 1h
+      continue: true
+    
+    # Database alerts
+    - match:
+        component: database
+      receiver: 'team-database'
+      group_wait: 30s
+      repeat_interval: 4h
+    
+    # Security alerts
+    - match:
+        component: security
+      receiver: 'team-security'
+      group_wait: 0s
+      repeat_interval: 4h
+    
+    # Business metrics alerts
+    - match:
+        component: business
+      receiver: 'team-business'
+      group_wait: 5m
+      repeat_interval: 24h
+    
+    # System alerts
+    - match:
+        component: system
+      receiver: 'team-ops'
+      group_wait: 5m
+      repeat_interval: 6h
+
+# Inhibition rules
+inhibit_rules:
+  # Inhibit warning alerts if critical alert is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+  
+  # Inhibit all alerts if application is down
+  - source_match:
+      alertname: 'BolcdApplicationDown'
+    target_match_re:
+      alertname: '^Bolcd.*'
+    equal: ['instance']
+
+# Receivers
+receivers:
+  # Default ops team
+  - name: 'team-ops'
+    email_configs:
+      - to: 'ops-team@example.com'
+        send_resolved: true
+        headers:
+          Subject: '[BOL-CD] {{ .GroupLabels.alertname }} - {{ .Status }}'
+        html: |
+          <h2>{{ .GroupLabels.alertname }}</h2>
+          <p><b>Status:</b> {{ .Status }}</p>
+          {{ range .Alerts }}
+          <h3>{{ .Labels.instance }}</h3>
+          <p>{{ .Annotations.description }}</p>
+          <p><b>Severity:</b> {{ .Labels.severity }}</p>
+          <p><b>Started:</b> {{ .StartsAt }}</p>
+          {{ end }}
+    
+    slack_configs:
+      - channel: '#ops-alerts'
+        send_resolved: true
+        title: 'BOL-CD Alert'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+        color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+  
+  # Critical alerts
+  - name: 'team-critical'
+    email_configs:
+      - to: 'oncall@example.com,manager@example.com'
+        send_resolved: true
+    
+    slack_configs:
+      - channel: '#critical-alerts'
+        send_resolved: true
+        title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        color: 'danger'
+    
+    pagerduty_configs:
+      - service_key_file: '/etc/alertmanager/pagerduty_key'
+        description: '{{ .GroupLabels.alertname }}: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+  
+  # Database team
+  - name: 'team-database'
+    email_configs:
+      - to: 'dba-team@example.com'
+        send_resolved: true
+    
+    slack_configs:
+      - channel: '#database-alerts'
+        send_resolved: true
+  
+  # Security team
+  - name: 'team-security'
+    email_configs:
+      - to: 'security-team@example.com'
+        send_resolved: false
+    
+    webhook_configs:
+      - url: 'https://siem.example.com/webhook/alerts'
+        send_resolved: false
+  
+  # Business team
+  - name: 'team-business'
+    email_configs:
+      - to: 'business-analytics@example.com'
+        send_resolved: true
+    
+    slack_configs:
+      - channel: '#business-metrics'
+        send_resolved: true
+        title: 'Business Metric Alert'
+        text: |
+          Alert: {{ .GroupLabels.alertname }}
+          {{ range .Alerts }}
+          - {{ .Annotations.description }}
+          {{ end }}

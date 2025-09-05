@@ -1,127 +1,196 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "bolcd.fullname" . }}
+  name: {{ include "bolcd.fullname" . }}-api
   labels:
-    app: {{ include "bolcd.name" . }}
+    {{- include "bolcd.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
 spec:
-  replicas: {{ .Values.replicaCount | default 1 }}
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
-      app: {{ include "bolcd.name" . }}
+      {{- include "bolcd.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
   template:
     metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       labels:
-        app: {{ include "bolcd.name" . }}
+        {{- include "bolcd.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: api
     spec:
-      serviceAccountName: {{ include "bolcd.serviceAccountName" . }}
-      {{- if .Values.imagePullSecrets }}
+      {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
-{{ toYaml .Values.imagePullSecrets | indent 8 }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if .Values.podSecurityContext }}
+      serviceAccountName: {{ include "bolcd.serviceAccountName" . }}
       securityContext:
-{{ toYaml .Values.podSecurityContext | indent 8 }}
-      {{- end }}
-      containers:
-        - name: api
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: db-migration
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - containerPort: {{ .Values.service.port }}
-          {{- if .Values.securityContext }}
-          securityContext:
-{{ toYaml .Values.securityContext | indent 12 }}
-          {{- end }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              pip install alembic
+              alembic upgrade head
           env:
-            {{- if and .Values.apiKeysSecret .Values.apiKeysSecret.enabled }}
-            - name: BOLCD_API_KEYS
+            - name: DB_URL
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.apiKeysSecret.name | quote }}
-                  key: {{ .Values.apiKeysSecret.key | quote }}
-            {{- else }}
-            - name: BOLCD_API_KEYS
-              value: {{ .Values.env.BOLCD_API_KEYS | quote }}
-            {{- end }}
-          {{- if .Values.envVars }}
-          {{- range .Values.envVars }}
-            - name: {{ .name | quote }}
-              value: {{ .value | quote }}
-          {{- end }}
-          {{- end }}
-          {{- if .Values.secretEnv }}
-          {{- range .Values.secretEnv }}
-            - name: {{ .name | quote }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .secretName | quote }}
-                  key: {{ .secretKey | quote }}
-          {{- end }}
-          {{- end }}
-          {{- if .Values.envFromSecretName }}
-          envFrom:
-            - secretRef:
-                name: {{ .Values.envFromSecretName | quote }}
-          {{- end }}
-          readinessProbe:
-            httpGet:
-              path: /readyz
-              port: {{ .Values.service.port }}
-            initialDelaySeconds: 5
-            periodSeconds: 10
+                  name: {{ include "bolcd.fullname" . }}-secret
+                  key: database-url
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - python
+            - -m
+            - uvicorn
+            - src.bolcd.api.main:app
+            - --host
+            - "0.0.0.0"
+            - --port
+            - "8000"
+            - --workers
+            - "4"
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
           livenessProbe:
             httpGet:
-              path: /livez
-              port: {{ .Values.service.port }}
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
             initialDelaySeconds: 10
-            periodSeconds: 20
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh","-c","sleep {{ .Values.pod.preStopSleepSeconds | default 5 }}"]
-          {{- if .Values.resources }}
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          env:
+            - name: PYTHONPATH
+              value: "/app:src"
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "bolcd.fullname" . }}-secret
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "bolcd.fullname" . }}-secret
+                  key: redis-url
+            - name: BOLCD_API_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "bolcd.fullname" . }}-secret
+                  key: api-keys
+            - name: BOLCD_POLICY_ALPHA
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "bolcd.fullname" . }}-config
+                  key: policy-alpha
+            - name: BOLCD_POLICY_SUPPORT_MIN
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "bolcd.fullname" . }}-config
+                  key: policy-support-min
+            - name: BOLCD_POLICY_LIFT_MIN
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "bolcd.fullname" . }}-config
+                  key: policy-lift-min
+            - name: BOLCD_NEAR_WINDOW_SEC
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "bolcd.fullname" . }}-config
+                  key: policy-near-window-sec
+            - name: BOLCD_LATE_TTL_SEC
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "bolcd.fullname" . }}-config
+                  key: policy-late-ttl-sec
+            - name: BOLCD_FALSE_SUPPRESSION_THRESHOLD
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "bolcd.fullname" . }}-config
+                  key: policy-false-suppression-threshold
+            - name: BOLCD_HIGH_SEVERITY_PROTECTION
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "bolcd.fullname" . }}-config
+                  key: policy-high-severity-protection
+            - name: BOLCD_ROOT_PASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "bolcd.fullname" . }}-config
+                  key: policy-root-pass
+            - name: BOLCD_ALLOWLIST_RULES
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "bolcd.fullname" . }}-config
+                  key: policy-allowlist-rules
+            - name: BOLCD_POLICY_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "bolcd.fullname" . }}-config
+                  key: policy-version
+            {{- if .Values.config.siem.splunkUrl }}
+            - name: BOLCD_SPLUNK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "bolcd.fullname" . }}-secret
+                  key: splunk-url
+            - name: BOLCD_SPLUNK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "bolcd.fullname" . }}-secret
+                  key: splunk-token
+            - name: BOLCD_SPLUNK_AUTH_SCHEME
+              value: {{ .Values.config.siem.splunkAuthScheme }}
+            {{- end }}
           resources:
-{{ toYaml .Values.resources | indent 12 }}
-          {{- end }}
-          {{- if or .Values.logs.emptyDir (and .Values.persistence .Values.persistence.logs .Values.persistence.logs.enabled) .Values.extraVolumeMounts .Values.reportsPVC.enabled (.Values.configsPVC.enabled) }}
+            {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
-            {{- if or (.Values.logs.emptyDir) (and .Values.persistence .Values.persistence.logs .Values.persistence.logs.enabled) }}
-            - name: logs
-              mountPath: /app/logs
-            {{- end }}
-            {{- if .Values.reportsPVC.enabled }}
-            - name: reports
-              mountPath: /reports
-              readOnly: true
-            {{- end }}
-            {{- with .Values.extraVolumeMounts }}
-{{ toYaml . | indent 12 }}
-            {{- end }}
-          {{- end }}
-      terminationGracePeriodSeconds: {{ .Values.pod.terminationGraceSeconds | default 30 }}
-      {{- if or .Values.logs.emptyDir (and .Values.persistence .Values.persistence.logs .Values.persistence.logs.enabled) .Values.extraVolumes .Values.reportsPVC.enabled (.Values.configsPVC.enabled) }}
+            - name: tmp
+              mountPath: /tmp
+            - name: cache
+              mountPath: /app/.cache
       volumes:
-        {{- if and .Values.persistence .Values.persistence.logs .Values.persistence.logs.enabled }}
-        - name: logs
-          persistentVolumeClaim:
-            claimName: {{ .Values.persistence.logs.existingClaim | default (include "bolcd.fullname" .) }}-logs
-        {{- else if .Values.logs.emptyDir }}
-        - name: logs
+        - name: tmp
           emptyDir: {}
-        {{- end }}
-        {{- if .Values.reportsPVC.enabled }}
-        - name: reports
-          persistentVolumeClaim:
-            claimName: {{ .Values.reportsPVC.existingClaim | default (include "bolcd.fullname" .) }}-reports
-        {{- end }}
-        {{- if .Values.configsPVC.enabled }}
-        - name: configs
-          persistentVolumeClaim:
-            claimName: {{ .Values.configsPVC.existingClaim | default (include "bolcd.fullname" .) }}-configs
-        {{- end }}
-        {{- with .Values.extraVolumes }}
-{{ toYaml . | indent 8 }}
-        {{- end }}
+        - name: cache
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
       {{- end }}
-
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

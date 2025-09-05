@@ -1,0 +1,247 @@
+# SCIM 2.0 Configuration for BOL-CD
+# System for Cross-domain Identity Management
+
+# SCIM Service Configuration
+service:
+  # Base URL for SCIM endpoints
+  base_url: "https://bolcd.example.com/scim/v2"
+  
+  # Authentication methods
+  authentication:
+    # Bearer token authentication
+    bearer_token:
+      enabled: true
+      # Tokens for different IdPs/clients
+      tokens:
+        okta: "${SCIM_TOKEN_OKTA}"
+        azure: "${SCIM_TOKEN_AZURE}"
+        generic: "${SCIM_TOKEN_GENERIC}"
+    
+    # Basic authentication
+    basic_auth:
+      enabled: false
+      users:
+        - username: "scim_admin"
+          password_hash: "${SCIM_ADMIN_PASSWORD_HASH}"
+    
+    # OAuth 2.0 authentication
+    oauth2:
+      enabled: false
+      client_id: "${SCIM_OAUTH_CLIENT_ID}"
+      client_secret: "${SCIM_OAUTH_CLIENT_SECRET}"
+      token_endpoint: "https://idp.example.com/oauth/token"
+      
+  # Rate limiting
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 1000
+    requests_per_hour: 10000
+    
+  # Pagination defaults
+  pagination:
+    default_count: 100
+    max_count: 1000
+    
+# User Provisioning Settings
+users:
+  # Auto-provisioning
+  auto_provision: true
+  
+  # Default settings for new users
+  defaults:
+    active: true
+    verified: false
+    role: "user"
+    require_password_change: true
+    
+  # Username generation
+  username:
+    # Strategy: email_prefix, email_full, custom
+    strategy: "email_prefix"
+    # Custom format (if strategy is custom)
+    format: "{firstName}.{lastName}"
+    # Make lowercase
+    lowercase: true
+    # Remove special characters
+    sanitize: true
+    
+  # Password policy for SCIM-created users
+  password_policy:
+    # Generate random password if not provided
+    auto_generate: true
+    min_length: 12
+    require_uppercase: true
+    require_lowercase: true
+    require_numbers: true
+    require_special: true
+    
+  # Profile attributes
+  attributes:
+    # Required attributes
+    required:
+      - "email"
+      - "displayName"
+    
+    # Optional attributes
+    optional:
+      - "phoneNumber"
+      - "department"
+      - "title"
+      - "manager"
+      - "employeeNumber"
+      
+    # Custom attributes (enterprise extension)
+    custom:
+      - name: "costCenter"
+        type: "string"
+      - name: "division"
+        type: "string"
+      - name: "securityClearance"
+        type: "string"
+        
+# Group Management Settings
+groups:
+  # Auto-create groups
+  auto_create: true
+  
+  # Group naming
+  naming:
+    # Prefix for SCIM-managed groups
+    prefix: "SCIM_"
+    # Make lowercase
+    lowercase: false
+    
+  # Sync settings
+  sync:
+    # Sync group membership
+    membership: true
+    # Remove users from groups when deprovisioned
+    remove_on_deprovision: true
+    
+  # Nested groups
+  nested_groups:
+    enabled: true
+    max_depth: 3
+    
+# Attribute Mapping
+attribute_mapping:
+  # Map SCIM attributes to internal user properties
+  user:
+    userName: "username"
+    emails[primary eq true].value: "email"
+    name.formatted: "full_name"
+    name.givenName: "first_name"
+    name.familyName: "last_name"
+    displayName: "display_name"
+    active: "is_active"
+    phoneNumbers[primary eq true].value: "phone"
+    "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:department": "department"
+    "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User:manager.value": "manager_id"
+    
+  group:
+    displayName: "name"
+    members: "members"
+    
+# Synchronization Settings
+sync:
+  # Enable real-time sync
+  real_time: true
+  
+  # Batch sync settings
+  batch:
+    enabled: true
+    # Run batch sync every N minutes
+    interval_minutes: 60
+    # Maximum users to sync per batch
+    batch_size: 1000
+    
+  # Conflict resolution
+  conflict_resolution:
+    # Strategy: idp_wins, local_wins, newest_wins, manual
+    strategy: "idp_wins"
+    
+  # Deprovisioning
+  deprovisioning:
+    # Action: deactivate, delete, archive
+    action: "deactivate"
+    # Grace period before deletion (days)
+    grace_period_days: 30
+    # Preserve audit logs
+    preserve_audit_logs: true
+    
+# Audit and Compliance
+audit:
+  # Log all SCIM operations
+  enabled: true
+  
+  # Log level: debug, info, warning, error
+  level: "info"
+  
+  # Include request/response bodies
+  include_payloads: false
+  
+  # Retention (days)
+  retention_days: 90
+  
+  # Compliance reporting
+  compliance:
+    # Generate compliance reports
+    enabled: true
+    # Report formats
+    formats:
+      - "json"
+      - "csv"
+      - "pdf"
+      
+# IdP-Specific Settings
+idp_settings:
+  okta:
+    # Okta-specific configuration
+    api_token: "${OKTA_API_TOKEN}"
+    domain: "${OKTA_DOMAIN}"
+    # Custom attributes from Okta
+    custom_attributes:
+      - "department"
+      - "costCenter"
+      
+  azure:
+    # Azure AD specific configuration
+    tenant_id: "${AZURE_TENANT_ID}"
+    # Map Azure AD groups to roles
+    group_mapping:
+      "Security Admins": "admin"
+      "Security Analysts": "analyst"
+      
+  google:
+    # Google Workspace specific configuration
+    domain: "${GOOGLE_DOMAIN}"
+    # Restrict to domain
+    restrict_to_domain: true
+    
+# Error Handling
+error_handling:
+  # Return detailed errors (disable in production)
+  detailed_errors: false
+  
+  # Retry settings
+  retry:
+    enabled: true
+    max_attempts: 3
+    backoff_seconds: 5
+    
+# Performance Settings
+performance:
+  # Connection pooling
+  connection_pool:
+    min_size: 5
+    max_size: 20
+    
+  # Caching
+  cache:
+    enabled: true
+    ttl_seconds: 300
+    
+  # Bulk operations
+  bulk_operations:
+    enabled: true
+    max_operations: 1000

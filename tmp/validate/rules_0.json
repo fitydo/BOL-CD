@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "timestamp": "2025-09-05T17:57:07.116724",
+  "timestamp": "2025-09-05T18:13:44.528371",
   "suppression_rules": [],
   "threshold_rules": [
     {
@@ -15,9 +15,9 @@
       "entity": "web-prod-01",
       "rules": [
         "RULE-0406",
-        "RULE-0986",
         "RULE-0135",
-        "RULE-0601"
+        "RULE-0601",
+        "RULE-0986"
       ],
       "threshold": 2,
       "window": 3600,
@@ -27,9 +27,9 @@
       "entity": "web-prod-02",
       "rules": [
         "RULE-0571",
-        "RULE-0810",
         "RULE-0188",
-        "RULE-0619"
+        "RULE-0619",
+        "RULE-0810"
       ],
       "threshold": 2,
       "window": 3600,
@@ -38,10 +38,10 @@
     {
       "entity": "db-master-01",
       "rules": [
-        "RULE-0986",
         "RULE-0135",
+        "RULE-0073",
         "RULE-0532",
-        "RULE-0073"
+        "RULE-0986"
       ],
       "threshold": 2,
       "window": 3600,
@@ -50,10 +50,10 @@
     {
       "entity": "db-slave-01",
       "rules": [
+        "RULE-0068",
         "RULE-0571",
-        "RULE-0950",
         "RULE-0188",
-        "RULE-0068"
+        "RULE-0950"
       ],
       "threshold": 2,
       "window": 3600,
@@ -63,9 +63,9 @@
       "entity": "app-server-01",
       "rules": [
         "RULE-0073",
-        "RULE-0532",
+        "RULE-0663",
         "RULE-0926",
-        "RULE-0663"
+        "RULE-0532"
       ],
       "threshold": 2,
       "window": 3600,
@@ -74,10 +74,10 @@
     {
       "entity": "app-server-02",
       "rules": [
-        "RULE-0280",
-        "RULE-0950",
         "RULE-0068",
-        "RULE-0624"
+        "RULE-0280",
+        "RULE-0624",
+        "RULE-0950"
       ],
       "threshold": 2,
       "window": 3600,
@@ -88,8 +88,8 @@
       "rules": [
         "RULE-0406",
         "RULE-0601",
-        "RULE-0926",
-        "RULE-0663"
+        "RULE-0663",
+        "RULE-0926"
       ],
       "threshold": 2,
       "window": 3600,
@@ -99,9 +99,9 @@
       "entity": "proxy-02",
       "rules": [
         "RULE-0280",
-        "RULE-0810",
+        "RULE-0624",
         "RULE-0619",
-        "RULE-0624"
+        "RULE-0810"
       ],
       "threshold": 2,
       "window": 3600,
@@ -111,9 +111,9 @@
       "entity": "mail-server-01",
       "rules": [
         "RULE-0406",
-        "RULE-0986",
         "RULE-0135",
-        "RULE-0601"
+        "RULE-0601",
+        "RULE-0986"
       ],
       "threshold": 2,
       "window": 3600,
@@ -123,9 +123,9 @@
       "entity": "file-server-01",
       "rules": [
         "RULE-0571",
-        "RULE-0810",
         "RULE-0188",
-        "RULE-0619"
+        "RULE-0619",
+        "RULE-0810"
       ],
       "threshold": 2,
       "window": 3600,

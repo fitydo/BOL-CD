@@ -1,0 +1,320 @@
+version: '3.8'
+
+# Production-optimized Docker Compose configuration
+# Use with: docker-compose -f docker-compose.prod.yml up -d
+
+services:
+  # PostgreSQL Database (Primary)
+  postgres-primary:
+    image: postgres:15-alpine
+    container_name: bolcd-postgres-primary
+    restart: always
+    environment:
+      POSTGRES_DB: bolcd_prod
+      POSTGRES_USER: bolcd_prod_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+      POSTGRES_MAX_CONNECTIONS: 200
+      POSTGRES_SHARED_BUFFERS: 256MB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 1GB
+      POSTGRES_MAINTENANCE_WORK_MEM: 64MB
+      POSTGRES_CHECKPOINT_COMPLETION_TARGET: 0.9
+      POSTGRES_WAL_BUFFERS: 16MB
+      POSTGRES_DEFAULT_STATISTICS_TARGET: 100
+      POSTGRES_RANDOM_PAGE_COST: 1.1
+      POSTGRES_EFFECTIVE_IO_CONCURRENCY: 200
+    secrets:
+      - db_password
+    volumes:
+      - postgres_primary_data:/var/lib/postgresql/data
+      - ./backups/postgres:/backups
+    networks:
+      - bolcd-internal
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  # PostgreSQL Database (Replica)
+  postgres-replica:
+    image: postgres:15-alpine
+    container_name: bolcd-postgres-replica
+    restart: always
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_PRIMARY_HOST: postgres-primary
+      POSTGRES_PRIMARY_PORT: 5432
+      POSTGRES_PRIMARY_USER: replicator
+      POSTGRES_PRIMARY_PASSWORD_FILE: /run/secrets/replication_password
+    secrets:
+      - db_password
+      - replication_password
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+    networks:
+      - bolcd-internal
+    depends_on:
+      - postgres-primary
+
+  # Redis Cluster (Primary)
+  redis-primary:
+    image: redis:7-alpine
+    container_name: bolcd-redis-primary
+    restart: always
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    volumes:
+      - redis_primary_data:/data
+    networks:
+      - bolcd-internal
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # Redis Cluster (Replica)
+  redis-replica:
+    image: redis:7-alpine
+    container_name: bolcd-redis-replica
+    restart: always
+    command: >
+      redis-server
+      --replicaof redis-primary 6379
+      --masterauth ${REDIS_PASSWORD}
+      --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_replica_data:/data
+    networks:
+      - bolcd-internal
+    depends_on:
+      - redis-primary
+
+  # BOL-CD Application (Multiple Instances)
+  bolcd-app-1:
+    image: bolcd:latest
+    container_name: bolcd-app-1
+    restart: always
+    env_file:
+      - .env.production
+    environment:
+      INSTANCE_ID: bolcd-1
+      DATABASE_URL: postgresql://bolcd_prod_user:${DB_PASSWORD}@postgres-primary:5432/bolcd_prod
+      DATABASE_REPLICA_URL: postgresql://bolcd_prod_user:${DB_PASSWORD}@postgres-replica:5432/bolcd_prod
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis-primary:6379/0
+      REDIS_REPLICA_URL: redis://:${REDIS_PASSWORD}@redis-replica:6379/0
+    volumes:
+      - ./data:/var/lib/bolcd/data
+      - ./logs/app1:/var/log/bolcd
+      - ./certs:/app/certs:ro
+    networks:
+      - bolcd-internal
+      - bolcd-external
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  bolcd-app-2:
+    image: bolcd:latest
+    container_name: bolcd-app-2
+    restart: always
+    env_file:
+      - .env.production
+    environment:
+      INSTANCE_ID: bolcd-2
+      DATABASE_URL: postgresql://bolcd_prod_user:${DB_PASSWORD}@postgres-primary:5432/bolcd_prod
+      DATABASE_REPLICA_URL: postgresql://bolcd_prod_user:${DB_PASSWORD}@postgres-replica:5432/bolcd_prod
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis-primary:6379/0
+      REDIS_REPLICA_URL: redis://:${REDIS_PASSWORD}@redis-replica:6379/0
+    volumes:
+      - ./data:/var/lib/bolcd/data
+      - ./logs/app2:/var/log/bolcd
+      - ./certs:/app/certs:ro
+    networks:
+      - bolcd-internal
+      - bolcd-external
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  # HAProxy Load Balancer
+  haproxy:
+    image: haproxy:2.8-alpine
+    container_name: bolcd-haproxy
+    restart: always
+    volumes:
+      - ./configs/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - ./certs:/etc/ssl/certs:ro
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8404:8404"  # Stats page
+    networks:
+      - bolcd-internal
+      - bolcd-external
+    depends_on:
+      - bolcd-app-1
+      - bolcd-app-2
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bolcd-prometheus
+    restart: always
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    volumes:
+      - ./configs/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./configs/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - bolcd-internal
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana-enterprise:latest
+    container_name: bolcd-grafana
+    restart: always
+    environment:
+      GF_SECURITY_ADMIN_USER_FILE: /run/secrets/grafana_user
+      GF_SECURITY_ADMIN_PASSWORD_FILE: /run/secrets/grafana_password
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource,redis-datasource
+      GF_SERVER_ROOT_URL: https://grafana.bolcd.example.com
+    secrets:
+      - grafana_user
+      - grafana_password
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - bolcd-internal
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # AlertManager
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: bolcd-alertmanager
+    restart: always
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+    volumes:
+      - ./configs/alertmanager/config.yml:/etc/alertmanager/config.yml:ro
+      - alertmanager_data:/alertmanager
+    networks:
+      - bolcd-internal
+
+  # Elasticsearch for Logging
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+    container_name: bolcd-elasticsearch
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - bolcd-internal
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  # Kibana for Log Visualization
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.0
+    container_name: bolcd-kibana
+    restart: always
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    networks:
+      - bolcd-internal
+    depends_on:
+      - elasticsearch
+
+  # Filebeat for Log Collection
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.10.0
+    container_name: bolcd-filebeat
+    restart: always
+    user: root
+    volumes:
+      - ./configs/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./logs:/var/log/bolcd:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - bolcd-internal
+    depends_on:
+      - elasticsearch
+
+networks:
+  bolcd-internal:
+    driver: bridge
+    internal: true
+  bolcd-external:
+    driver: bridge
+
+volumes:
+  postgres_primary_data:
+    driver: local
+  postgres_replica_data:
+    driver: local
+  redis_primary_data:
+    driver: local
+  redis_replica_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  alertmanager_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  replication_password:
+    file: ./secrets/replication_password.txt
+  grafana_user:
+    file: ./secrets/grafana_user.txt
+  grafana_password:
+    file: ./secrets/grafana_password.txt

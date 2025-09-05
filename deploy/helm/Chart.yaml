@@ -1,7 +1,25 @@
 apiVersion: v2
 name: bolcd
-description: BOL-CD API Helm chart
+description: BOL-CD Alert Reduction System with Condensed Alerts and Late Replay
 type: application
 version: 1.0.0
 appVersion: "1.0.0"
-
+keywords:
+  - alert-reduction
+  - siem
+  - observability
+  - security
+maintainers:
+  - name: Platform Team
+    email: platform@example.com
+sources:
+  - https://github.com/example/bol-cd
+dependencies:
+  - name: postgresql
+    version: "12.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: "18.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled

@@ -1,233 +1,252 @@
+# Default values for bolcd
+replicaCount: 2
+
 image:
-  repository: ghcr.io/fitydo/bol-cd
-  tag: latest
+  repository: ghcr.io/example/bol-cd
   pullPolicy: IfNotPresent
+  tag: "latest"
 
 imagePullSecrets: []
-
-replicaCount: 1
-
-service:
-  type: ClusterIP
-  port: 8080
+nameOverride: ""
+fullnameOverride: ""
 
 serviceAccount:
   create: true
+  annotations: {}
   name: ""
-  rbac:
-    create: true
 
-jobServiceAccount:
-  create: true
-  name: ""
-  rbac:
-    create: true
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8000"
+  prometheus.io/path: "/metrics"
 
-externalSecrets:
-  enabled: false
-  secretStoreRef:
-    name: ""
-    kind: ClusterSecretStore
-  targetName: bolcd-secrets
-  refreshInterval: 1h
-  data: []
-  # examples:
-  # data:
-  #   - secretKey: splunk_url
-  #     remoteRef:
-  #       key: prod/siem/splunk
-  #       property: url
-  #   - secretKey: splunk_token
-  #     remoteRef:
-  #       key: prod/siem/splunk
-  #       property: token
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
 
-env:
-  BOLCD_API_KEYS: "view:viewer,testop:operator"
-  # Optional OIDC/OAuth2 settings (enable when all are set)
-  # BOLCD_OIDC_ISS: "https://issuer.example.com/"
-  # BOLCD_OIDC_AUD: "bolcd-api"
-  # BOLCD_OIDC_JWKS: "https://issuer.example.com/.well-known/jwks.json"
-  # Optional CORS origins (comma-separated)
-  # BOLCD_CORS_ORIGINS: "https://console.example.com,https://ops.example.com"
-  # Rate limiting defaults (enabled by default in app)
-  # BOLCD_RATE_LIMIT_ENABLED: "1"
-  # BOLCD_RATE_LIMIT_RPS: "10"
-  # BOLCD_RATE_LIMIT_BURST: "20"
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
 
-resources: {}
-
-securityContext: {}
-podSecurityContext: {}
-
-pod:
-  terminationGraceSeconds: 30
-  preStopSleepSeconds: 5
-
-logs:
-  emptyDir: false
-
-apiKeysSecret:
-  enabled: false
-  name: bolcd-apikeys
-  key: BOLCD_API_KEYS
+service:
+  type: ClusterIP
+  port: 8000
+  targetPort: 8000
 
 ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-  hosts: []
-  exposeMetrics: false
-  basicAuth:
-    enabled: false
-    secretName: bolcd-basic-auth
-    realm: "Authentication Required"
-  whitelistSourceRanges: []
-  tls: []
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+  hosts:
+    - host: bolcd.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: bolcd-tls
+      hosts:
+        - bolcd.example.com
 
-hpa:
-  enabled: false
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
   minReplicas: 2
-  maxReplicas: 5
-  targetCPUUtilizationPercentage: 70
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
-pdb:
-  enabled: false
-  minAvailable: 1
+# Application configuration
+config:
+  # Database
+  database:
+    url: "postgresql://bolcd:password@postgresql:5432/bolcd"
+    maxConnections: 20
+    poolSize: 10
+  
+  # Redis
+  redis:
+    url: "redis://redis:6379/0"
+    ttl: 3600
+  
+  # Policy parameters
+  policy:
+    alpha: "0.01"  # ADR-0002 compliant
+    supportMin: "20"
+    liftMin: "1.5"
+    nearWindowSec: "3600"
+    lateTtlSec: "86400"
+    falseSuppressionThreshold: "0.3"
+    highSeverityProtection: "true"
+    rootPass: "true"
+    allowlistRules: "R-CRITICAL-1,R-CRITICAL-2"
+    policyVersion: "safe-1.0.0"
+  
+  # API Keys (will be overridden by secrets)
+  apiKeys: ""
+  
+  # SIEM connectors
+  siem:
+    splunkUrl: ""
+    splunkToken: ""
+    splunkAuthScheme: "bearer"
+    azureTenantId: ""
+    azureClientId: ""
+    azureClientSecret: ""
+    opensearchUrl: ""
+    opensearchUser: ""
+    opensearchPassword: ""
+  
+  # Rate limiting
+  rateLimit:
+    enabled: true
+    requestsPerMinute: 100
+    burstSize: 200
+  
+  # Monitoring
+  monitoring:
+    metricsEnabled: true
+    tracingEnabled: true
+    loggingLevel: "INFO"
+    loggingFormat: "json"
 
+# CronJob for late replay reconciler
+reconciler:
+  enabled: true
+  schedule: "*/15 * * * *"  # Every 15 minutes
+  image:
+    repository: ghcr.io/example/bol-cd
+    tag: "latest"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+
+# PostgreSQL subchart configuration
+postgresql:
+  enabled: true
+  auth:
+    database: bolcd
+    username: bolcd
+    password: changeme  # Override in production
+    postgresPassword: changeme  # Override in production
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+
+# Redis subchart configuration
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: changeme  # Override in production
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+  replica:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+# ServiceMonitor for Prometheus
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  path: /metrics
+  labels:
+    prometheus: kube-prometheus
+
+# PrometheusRule for alerting
+prometheusRule:
+  enabled: true
+  rules:
+    - alert: HighFalseSuppressionRate
+      expr: rate(bolcd_false_suppression_total[5m]) > 0.1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High false suppression rate detected"
+        description: "False suppression rate is {{ $value }} (threshold: 0.1)"
+    
+    - alert: LowReductionRate
+      expr: (1 - (rate(bolcd_suppress_total[5m]) / rate(bolcd_alerts_total[5m]))) < 0.3
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Low alert reduction rate"
+        description: "Reduction rate is {{ $value }} (threshold: 30%)"
+    
+    - alert: HighLatency
+      expr: histogram_quantile(0.95, rate(bolcd_decision_latency_ms_bucket[5m])) > 500
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High decision latency"
+        description: "95th percentile latency is {{ $value }}ms (threshold: 500ms)"
+
+# Network Policy
 networkPolicy:
-  enabled: false
-  ingressFromCIDRs: []
-
-persistence:
-  logs:
-    enabled: false
-    size: 1Gi
-    storageClass: ""
-    existingClaim: ""
-
-monitor:
-  serviceAnnotationsEnabled: false
-  serviceMonitorEnabled: false
-  prometheusRelease: prometheus
-  scrapeInterval: 30s
-  alertsEnabled: false
-  alerts:
-    p95Ms: 0.1  # 100ms
-    ab:
-      # reduction_by_count must stay >= (1 - minReductionDrop)
-      minReductionDrop: 0.4
-      # new_in_b unique upper bound
-      maxNewInBUnique: 500
-      # new_in_b total events upper bound
-      maxNewInBCount: 5000
-      # report considered stale after seconds
-      maxStaleSeconds: 21600
-    backupMaxStaleSeconds: 172800
-    http:
-      errorRate5xx: 0.01
-      errorRate4xx: 0.05
-      errorRate429: 0.02
-
-    rateLimit:
-      enabled: false
-      increase5m: 0
-
-  grafana:
-    enabled: false
-    folder: "Observability"
-
-backup:
-  enabled: false
-  # Option A: copy archives to an extra PVC
-  pvc:
-    enabled: false
-    size: 10Gi
-    storageClass: ""
-    existingClaim: ""
-  # Option B: upload to S3-compatible storage
-  s3:
-    enabled: false
-    bucket: "your-bucket"
-    prefix: "bolcd"
-    region: "us-east-1"
-    endpoint: ""  # optional (e.g., MinIO)
-    awsSecretName: bolcd-backup-aws  # secret with AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY
-  image: "alpine:3.20"
-  schedule: "0 2 * * *"
-
-cron:
-  recompute:
-    enabled: false
-    # 例: 03:00 に実行
-    schedule: "0 3 * * *"
-    # operator キーの Secret を使う場合
-    operatorApiKeySecret:
-      name: ""
-      key: ""
-    # もしくは値で直指定（開発用）
-    operatorApiKey: ""
-    # リクエストボディ（必要なら events_path/persist_dir/epsilon 等を指定）
-    body: "{}"
-
-  abWeekly:
-    enabled: false
-    # 毎週月曜 04:00
-    schedule: "0 4 * * 1"
-    prefixA: "data/raw/splunk_A_"
-    prefixB: "data/raw/splunk_B_"
-    # 集計のキー（オプション）
-    # keys: ["host", "index", "sourcetype", "source", "component", "group"]
-
-  abDaily:
-    enabled: false
-    # 毎日 01:05 開始
-    schedule: "5 1 * * *"
-    hours: 24
-    splunk:
-      index: "_internal"
-      # B側の除外条件（実運用では実際の抑制条件へ置換）
-      exclude: "sourcetype=splunkd*"
-      # 以下は任意: CronJobだけでURL/検証を上書きしたい場合に使用
-      # url: "https://192.168.1.12:8089"
-      # verify: false
-    # 任意の追加環境変数（CronJobのab-dailyコンテナにのみ注入）
-    # extraEnv:
-    #   - name: BOLCD_SPLUNK_OWNER
-    #     value: nobody
-
-  # Daily notification to Slack (optional)
-  abNotify:
-    enabled: false
-    # 毎日 07:15 に前日分の日次レポートを送信
-    schedule: "15 7 * * *"
-    webhookSecret:
-      name: "bolcd-notify"
-      key: "webhook"
-
-  cleanup:
-    enabled: false
-    schedule: "30 3 * * *"
-    keepDays: 14
-
-kpi:
-  enabled: false
-  schedule: "15 3 * * *"   # UTC 03:15
-  reportsDir: "/reports"
-  # Cost analysis (optional)
-  costPerGbUSD: null       # e.g., 4.3 for Sentinel PAYG
-  ingestAGB: null          # e.g., 200.0
-  ingestBGB: null          # e.g., 160.0
-
-reportsPVC:
-  enabled: false
-  size: 2Gi
-  storageClass: ""
-  existingClaim: ""
-
-configsPVC:
-  enabled: false
-  size: 1Gi
-  storageClass: ""
-  existingClaim: ""
-
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+  egress:
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 5432  # PostgreSQL
+        - protocol: TCP
+          port: 6379  # Redis
+        - protocol: TCP
+          port: 443   # HTTPS for external APIs

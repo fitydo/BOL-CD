@@ -18,15 +18,69 @@ class SIEMConnector:
         
     def connect_splunk(self) -> List[Dict]:
         """Splunk REST API connection"""
-        # In production, use splunklib
-        # import splunklib.client as client
-        # service = client.connect(
-        #     host=self.config['host'],
-        #     port=self.config['port'],
-        #     username=self.config['username'],
-        #     password=self.config['password']
-        # )
+        import os
+        import requests
+        from urllib.parse import quote
         
+        # 環境変数から認証情報を取得
+        splunk_url = os.getenv('BOLCD_SPLUNK_URL')
+        splunk_token = os.getenv('BOLCD_SPLUNK_TOKEN')
+        auth_scheme = os.getenv('BOLCD_SPLUNK_AUTH_SCHEME', 'Splunk')
+        
+        if splunk_url and splunk_token:
+            try:
+                # Splunk REST API を使用してリアルデータを取得
+                headers = {
+                    'Authorization': f'{auth_scheme} {splunk_token}',
+                    'Content-Type': 'application/json'
+                }
+                
+                # セキュリティイベントを検索
+                search_query = 'search index=_internal OR index=main earliest=-1h | head 500'
+                
+                # ジョブを作成
+                job_endpoint = f"{splunk_url}/services/search/jobs"
+                job_data = {
+                    'search': search_query,
+                    'output_mode': 'json'
+                }
+                
+                response = requests.post(job_endpoint, headers=headers, data=job_data, verify=False)
+                
+                if response.status_code == 201:
+                    # ジョブIDを取得
+                    job_id = response.json().get('sid')
+                    
+                    # 結果を取得
+                    results_endpoint = f"{splunk_url}/services/search/jobs/{job_id}/results"
+                    results = requests.get(results_endpoint, headers=headers, params={'output_mode': 'json'}, verify=False)
+                    
+                    if results.status_code == 200:
+                        events = []
+                        for result in results.json().get('results', []):
+                            events.append({
+                                "_time": result.get('_time', datetime.now().isoformat()),
+                                "host": result.get('host', 'unknown'),
+                                "source": result.get('source', 'unknown'),
+                                "sourcetype": result.get('sourcetype', 'unknown'),
+                                "signature": result.get('signature', 'Unknown_Event'),
+                                "severity": result.get('severity', 'medium'),
+                                "rule_id": f"RULE-{hash(result.get('_raw', '')) % 1000:04d}",
+                                "entity_id": result.get('host', 'unknown'),
+                                "count": 1,
+                                "_raw": result.get('_raw', '')
+                            })
+                        
+                        if events:
+                            print(f"✅ Splunk APIから{len(events)}件のリアルイベントを取得しました")
+                            return events
+                        
+            except Exception as e:
+                print(f"⚠️ Splunk API接続エラー: {e}")
+                print("デモデータにフォールバックします")
+        
+        # デモデータにフォールバック
+        print("📦 デモデータを生成中...")
         # Demo: Generate realistic Splunk-like events
         events = []
         now = datetime.now()
@@ -48,7 +102,8 @@ class SIEMConnector:
                  "mail-server-01", "file-server-01"]
         
         # Generate events for the last hour
-        for i in range(100):
+        num_events = self.config.get('num_events', 500)  # Default to 500 events
+        for i in range(num_events):
             pattern = alert_patterns[i % len(alert_patterns)]
             events.append({
                 "_time": (now - timedelta(minutes=i % 60)).isoformat(),

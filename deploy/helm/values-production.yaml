@@ -1,0 +1,102 @@
+# Production environment specific values
+replicaCount: 3
+
+ingress:
+  hosts:
+    - host: bolcd.production.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: bolcd-prod-tls
+      hosts:
+        - bolcd.production.example.com
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 75
+
+config:
+  monitoring:
+    loggingLevel: "INFO"
+    tracingEnabled: true
+  
+  policy:
+    # Production-ready settings
+    alpha: "0.01"
+    supportMin: "20"
+    liftMin: "1.5"
+    nearWindowSec: "3600"
+    lateTtlSec: "86400"
+
+postgresql:
+  primary:
+    persistence:
+      size: 50Gi
+      storageClass: fast-ssd
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+      requests:
+        cpu: 1000m
+        memory: 2Gi
+
+redis:
+  replica:
+    replicaCount: 3
+  master:
+    persistence:
+      size: 20Gi
+      storageClass: fast-ssd
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+  replica:
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+
+# Production monitoring
+serviceMonitor:
+  interval: 15s
+
+# Stricter alerting rules for production
+prometheusRule:
+  rules:
+    - alert: HighFalseSuppressionRate
+      expr: rate(bolcd_false_suppression_total[5m]) > 0.05
+      for: 3m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Critical: High false suppression rate in production"
+        description: "False suppression rate is {{ $value }} (threshold: 0.05)"
+    
+    - alert: VeryHighLatency
+      expr: histogram_quantile(0.99, rate(bolcd_decision_latency_ms_bucket[5m])) > 1000
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Critical: Very high decision latency in production"
+        description: "99th percentile latency is {{ $value }}ms (threshold: 1000ms)"

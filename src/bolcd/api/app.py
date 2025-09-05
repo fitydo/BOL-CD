@@ -36,9 +36,42 @@ from bolcd.audit.store import JSONLAuditStore, SQLiteAuditStore
 from .middleware import install_middlewares, verify_role
 from bolcd.ui.dashboard import router as dashboard_router
 
+# Import auth routes
+try:
+    from .auth_routes import router as auth_router
+    auth_available = True
+except ImportError:
+    auth_available = False
+
+# Import SAML routes
+try:
+    from .saml_routes import router as saml_router
+    saml_available = True
+except ImportError:
+    saml_available = False
+
+# Import SCIM routes
+try:
+    from .scim_routes import router as scim_router
+    scim_available = True
+except ImportError:
+    scim_available = False
+
 app = FastAPI(title="ChainLite API (BOL‑CD for SOC)", version="1.0.0")
 install_middlewares(app)
 app.include_router(dashboard_router)
+
+# Include auth routes if available
+if auth_available:
+    app.include_router(auth_router)
+
+# Include SAML routes if available
+if saml_available:
+    app.include_router(saml_router)
+
+# Include SCIM routes if available
+if scim_available:
+    app.include_router(scim_router)
 
 # Secure defaults for CORS (configurable via env)
 cors_origins = os.getenv("BOLCD_CORS_ORIGINS", "*")

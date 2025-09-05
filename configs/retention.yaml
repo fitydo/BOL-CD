@@ -1,0 +1,39 @@
+# Data Retention Policy Configuration
+# Adjust retention periods based on your compliance requirements
+
+retention_policies:
+  alerts:
+    retention_days: 90
+    enabled: true
+    archive_before_delete: false
+    compliance_hold: false
+  
+  audit_logs:
+    retention_days: 365
+    enabled: true
+    archive_before_delete: true
+    compliance_hold: false
+  
+  metrics:
+    retention_days: 30
+    enabled: true
+    archive_before_delete: false
+    compliance_hold: false
+  
+  reports:
+    retention_days: 365
+    enabled: true
+    archive_before_delete: true
+    compliance_hold: false
+  
+  temporary:
+    retention_days: 7
+    enabled: true
+    archive_before_delete: false
+    compliance_hold: false
+  
+  compliance:
+    retention_days: 2555  # 7 years
+    enabled: false
+    archive_before_delete: true
+    compliance_hold: true

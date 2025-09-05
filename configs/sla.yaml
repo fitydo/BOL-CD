@@ -1,0 +1,39 @@
+# SLA Target Configuration
+# Define your service level objectives
+
+sla_targets:
+  uptime:
+    value: 99.5
+    unit: "%"
+    window_seconds: 86400  # 24 hours
+    critical: true
+  
+  availability:
+    value: 99.9
+    unit: "%"
+    window_seconds: 2592000  # 30 days
+    critical: true
+  
+  response_p95:
+    value: 0.1  # 100ms
+    unit: "seconds"
+    window_seconds: 3600  # 1 hour
+    critical: false
+  
+  response_p99:
+    value: 0.5  # 500ms
+    unit: "seconds"
+    window_seconds: 3600
+    critical: false
+  
+  error_rate:
+    value: 0.5
+    unit: "%"
+    window_seconds: 3600
+    critical: false
+  
+  throughput:
+    value: 10000
+    unit: "eps"
+    window_seconds: 60
+    critical: false
