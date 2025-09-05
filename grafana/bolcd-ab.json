@@ -9,12 +9,42 @@
     {
       "type": "stat",
       "title": "Reduction by count",
-      "targets": [{"expr": "bolcd_ab_reduction_by_count"}]
+      "targets": [{"expr": "bolcd_ab_reduction_by_count"}],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red"},
+              {"color": "yellow", "value": 0},
+              {"color": "green", "value": 0.25}
+            ]
+          }
+        },
+        "overrides": []
+      }
     },
     {
       "type": "stat",
       "title": "Reduction by unique",
-      "targets": [{"expr": "bolcd_ab_reduction_by_unique"}]
+      "targets": [{"expr": "bolcd_ab_reduction_by_unique"}],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red"},
+              {"color": "yellow", "value": 0},
+              {"color": "green", "value": 0.25}
+            ]
+          }
+        },
+        "overrides": []
+      }
     },
     {
       "type": "stat",

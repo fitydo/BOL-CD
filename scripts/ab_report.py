@@ -3,10 +3,10 @@ from __future__ import annotations
 
 import argparse
 import json
-from collections import Counter, defaultdict
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Sequence, Tuple
+from typing import Any, Dict, Iterable, Sequence, Tuple
 
 
 def read_jsonl(path: Path) -> Iterable[Dict[str, Any]]:

@@ -1,0 +1,4 @@
+# file: /home/yoshi/miniconda3/bin/schemathesis
+# hypothesis_version: 6.137.3
+
+['.exe', '__main__']

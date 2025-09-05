@@ -4,7 +4,6 @@ from __future__ import annotations
 import json
 import base64
 from time import monotonic
-import uuid
 import logging
 import os
 from pathlib import Path

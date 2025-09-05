@@ -2,7 +2,6 @@
 import argparse
 import json
 import pathlib
-import sys
 
 
 def main() -> int:

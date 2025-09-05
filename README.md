@@ -132,10 +132,28 @@ CSV と Markdown を `reports/` に出力します。
 
 - Prereqs: Kubernetes cluster + Ingress controller
 - Prod values: `deploy/helm/values-prod.yaml`
-- Install:
+- One-command install:
+  ```bash
+  # Minimal env: provide Splunk URL/TOKEN and optional image tag
+  NS=bolcd \
+  SPLUNK_URL='https://splunk.example.com:8089' \
+  SPLUNK_TOKEN='<token>' \
+  IMAGE_TAG='sha-<short-sha>' \
+  bash scripts/install_prod.sh
   ```
-  # Use immutable image tag from GHCR (short SHA)
-  helm upgrade --install bolcd ./deploy/helm -n <namespace> -f deploy/helm/values-prod.yaml \
+- Makefile（コピー&ペースト可）:
+  ```bash
+  make preflight NS=bolcd
+  make deploy   NS=bolcd IMAGE_TAG=sha-<short-sha>
+  make postflight NS=bolcd
+  # A/B日次ジョブを即時1回実行
+  make ab-run-once NS=bolcd
+  # メトリクスquick check
+  make metrics NS=bolcd
+  ```
+- 直接Helmを使う場合（参考）:
+  ```bash
+  helm upgrade --install bolcd ./deploy/helm -n bolcd -f deploy/helm/values-prod.yaml \
     --set image.tag=sha-<short-sha> --create-namespace --wait
   ```
 - Optional:

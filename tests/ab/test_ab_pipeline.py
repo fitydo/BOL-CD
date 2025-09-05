@@ -1,4 +1,8 @@
-import json, tempfile, pathlib, subprocess, sys, os, datetime
+import json
+import pathlib
+import subprocess
+import sys
+import datetime
 
 
 def write_jsonl(p, rows):
@@ -16,12 +20,15 @@ def test_ab_pipeline(tmp_path: pathlib.Path):
             "entity_id": f"host-{i % 10}",
             "rule_id": f"R-{i % 3}",
         })
-    inp = tmp_path / 'events.jsonl'; write_jsonl(inp, events)
+    inp = tmp_path / 'events.jsonl'
+    write_jsonl(inp, events)
 
-    out = tmp_path / 'ab'; out.mkdir()
+    out = tmp_path / 'ab'
+    out.mkdir()
     subprocess.check_call([sys.executable, 'scripts/ab/ab_split.py', '--in', str(inp), '--out-dir', str(out)])
 
-    rep = tmp_path / 'reports'; rep.mkdir()
+    rep = tmp_path / 'reports'
+    rep.mkdir()
     subprocess.check_call([sys.executable, 'scripts/ab/ab_report.py', '--in-a', str(out / 'A.jsonl'), '--in-b', str(out / 'B.jsonl'), '--out-dir', str(rep), '--date-label', '2099-01-01'])
     j = json.loads((rep / 'ab_2099-01-01.json').read_text(encoding='utf-8'))
     assert 'reduction_by_count' in j and 'reduction_by_unique' in j
