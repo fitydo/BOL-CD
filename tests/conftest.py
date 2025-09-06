@@ -15,6 +15,24 @@ if SRC not in sys.path:
 
 @pytest.fixture(scope="session", autouse=True)
 def _api_key_env_setup():
-    # Provide a default key mapping for tests: viewer & operator
-    os.environ["BOLCD_API_KEYS"] = "testviewer:viewer,testop:operator"
+    # Provide a default superset of API keys covering all scopes used across tests
+    # Format: scope:key
+    os.environ["BOLCD_API_KEYS"] = ",".join([
+        # Keys used by integration tests
+        "admin:admin-key",
+        "condensed:test-key",
+        "full:full-key",
+        "ingest:ingest-key",
+        # Keys used by condensed API tests
+        "admin:demo-key-admin",
+        "condensed:demo-key-condensed",
+        "full:demo-key-full",
+        "ingest:demo-key-ingest",
+        # Additional roles used in some RBAC tests
+        "viewer:testviewer",
+        "operator:testop",
+    ])
+    # Ensure tests use plain key matching and avoid rate limiting side-effects
+    os.environ["BOLCD_HASH_METHOD"] = "plain"
+    os.environ["BOLCD_RATE_LIMIT_ENABLED"] = "0"
     yield

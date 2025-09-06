@@ -1,79 +1,37 @@
-# Git
+# Exclude VCS files
 .git
 .gitignore
 
-# Python
-__pycache__
+# Python caches
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-*.so
-*.egg
-*.egg-info
-dist
-build
-eggs
-.eggs
-parts
-bin
-var
-sdist
-develop-eggs
-.installed.cfg
-lib
-lib64
-.pytest_cache
-.coverage
-htmlcov
-.tox
-.hypothesis
+*.egg-info/
+.eggs/
 
-# Virtual environments
-venv/
-env/
-ENV/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Project specific
-logs/
-data/raw/
-data/ab_split/
-reports/
-*.log
-*.db
-*.sqlite
-*.sqlite3
-
-# Documentation
-docs/
-*.md
-!README.md
-
-# CI/CD
-.github/
-deploy/
-tests/
-
-# Node modules (for frontend)
-node_modules/
+# Node and web build artifacts
 web/node_modules/
 web/dist/
-web/build/
 
-# Temporary files
-tmp/
-temp/
-*.tmp
+# Local data, logs, reports
+logs/
+*.log
+reports/
+*.db
+*.sqlite
 
-# Environment files
-.env
-.env.*
-!.env.example
+# Secrets and certificates (mounted at runtime)
+certs/
+*.pem
+*.key
+*.crt
+
+# Test and coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.hypothesis/
+
+# Docker build leftovers
+Dockerfile.*~

@@ -51,7 +51,7 @@ def serialize_alert(alert: Alert) -> dict:
 
 @router.get("")
 def list_alerts(
-    view: str = Query("condensed", regex="^(condensed|full|delta)$"),
+    view: str = Query("condensed", pattern="^(condensed|full|delta)$"),
     since: Optional[datetime] = None,
     until: Optional[datetime] = None,
     severity: Optional[str] = None,

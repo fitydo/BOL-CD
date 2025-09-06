@@ -8,8 +8,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# Configure API keys before importing the app
-os.environ["BOLCD_API_KEYS"] = "admin:demo-key-admin,condensed:demo-key-condensed,full:demo-key-full,ingest:demo-key-ingest"
+# Configure API keys before importing the app (use same keys as integration tests)
+os.environ["BOLCD_API_KEYS"] = "admin:admin-key,condensed:test-key,full:full-key,ingest:ingest-key"
 os.environ["BOLCD_RATE_LIMIT_ENABLED"] = "0"
 os.environ["BOLCD_HASH_METHOD"] = "plain"  # Use plain keys for testing
 
@@ -31,13 +31,19 @@ def override_get_db():
 
 # Now import app after environment is set
 from src.bolcd.api.main import app
-app.dependency_overrides[get_db] = override_get_db
 
-# Create test client
+# Create test client at module scope
 client = TestClient(app)
 
+# Ensure DB override is applied per-test and then cleared to avoid leaking across modules
+@pytest.fixture(autouse=True)
+def _override_dep_per_test():
+    app.dependency_overrides[get_db] = override_get_db
+    yield
+    app.dependency_overrides.clear()
+
 # Test API key
-TEST_API_KEY = "demo-key-admin"
+TEST_API_KEY = "admin-key"
 
 @pytest.fixture(autouse=True)
 def setup_database():

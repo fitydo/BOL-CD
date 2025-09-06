@@ -16,7 +16,8 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir --user "setuptools>=78.1.1" && \
+    pip install --no-cache-dir --user -r requirements.txt
 
 # Production stage
 FROM python:3.11-slim
