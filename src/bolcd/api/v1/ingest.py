@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field
 import hashlib
-import json
 
 from src.bolcd.db import get_db
 from src.bolcd.models.condense import Alert
@@ -270,4 +269,4 @@ async def get_sample_data():
         "usage": "POST these to /v1/ingest with your API key"
     }
 
-from datetime import timedelta
+from datetime import timedelta  # noqa: E402

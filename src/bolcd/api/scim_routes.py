@@ -4,13 +4,12 @@ Implements System for Cross-domain Identity Management protocol
 for automatic user provisioning from enterprise IdPs.
 """
 
-from fastapi import APIRouter, Request, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, Query, Response
 from fastapi.responses import JSONResponse
 from typing import Dict, Any, Optional
-from pydantic import BaseModel
 import logging
 
-from ..auth.scim import SCIMManager, SCIMUser, SCIMGroup, SCIMListResponse
+from ..auth.scim import SCIMManager, SCIMUser, SCIMGroup
 from ..auth.manager import AuthManager
 from .middleware import verify_role
 

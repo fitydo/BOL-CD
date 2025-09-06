@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/api/saml_routes.py
+# hypothesis_version: 6.137.3
+
+[401, 443, 501, '/acs', '/api/v1/auth/saml', '/logout-success', '/metadata', '/slo', '/sls', '/sso', 'Content-Disposition', 'SAML SSO', 'SAML not configured', 'application/xml', 'email', 'error', 'get_data', 'host', 'http_host', 'https', 'id', 'localhost', 'name', 'off', 'on', 'post_data', 'role', 'script_name', 'server_port', 'slo_url', 'sso_url', 'success', 'tokens', 'user']

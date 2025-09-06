@@ -7,20 +7,15 @@ Supports popular IdPs like Okta, Azure AD, Google Workspace, OneLogin.
 from __future__ import annotations
 
 import os
-import base64
 from typing import Dict, Any, Optional
-from datetime import datetime, timedelta
-import xml.etree.ElementTree as ET
-from urllib.parse import urlencode
 
 try:
     from onelogin.saml2.auth import OneLogin_Saml2_Auth
-    from onelogin.saml2.utils import OneLogin_Saml2_Utils
+    from onelogin.saml2.utils import OneLogin_Saml2_Utils  # noqa: F401
     SAML_AVAILABLE = True
 except ImportError:
     SAML_AVAILABLE = False
 
-from .models import User
 from .manager import AuthManager
 
 

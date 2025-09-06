@@ -4,14 +4,13 @@ False Suppression Validator - 誤抑制の検証と追跡システム
 誤抑制を正確に判定するための多層的な検証フレームワーク
 """
 import json
-import hashlib
 import random
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Set
+from typing import Dict, List, Optional
 from collections import defaultdict, Counter
 import numpy as np
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 
 @dataclass
 class ValidationResult:
@@ -88,7 +87,7 @@ class FalseSuppressionValidator:
         
         for event in self.suppressed:
             severity = event.get('severity', 'unknown').lower()
-            signature = event.get('signature', '').lower()
+            # signature not used presently; derive features from raw only
             raw = event.get('_raw', '').lower()
             
             # Critical/Highは原則誤抑制
@@ -345,7 +344,7 @@ class FalseSuppressionValidator:
         
         # 総合判定
         all_confirmed = sum(r.confirmed_false_suppressions for r in results.values())
-        all_suspected = sum(r.suspected_false_suppressions for r in results.values())
+        _ = sum(r.suspected_false_suppressions for r in results.values())
         avg_confidence = np.mean([r.confidence_level for r in results.values()])
         
         # 重み付き平均（信頼度で重み付け）

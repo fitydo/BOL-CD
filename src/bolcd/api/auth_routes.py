@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
 
 from ..auth import AuthManager, User, UserCreate, UserLogin, Token
 from ..auth.models import GoogleAuthRequest, UserUpdate, PasswordChange

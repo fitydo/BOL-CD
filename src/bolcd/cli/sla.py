@@ -85,7 +85,7 @@ def main(argv: List[str] | None = None) -> int:
             if args.output:
                 # Save text report
                 with open(args.output, "w") as f:
-                    f.write(f"SLA Compliance Report\n")
+                    f.write("SLA Compliance Report\n")
                     f.write(f"Period: {report['period']['start'][:10]} to {report['period']['end'][:10]}\n")
                     f.write(f"Overall Compliance: {'PASS' if report['overall_compliance'] else 'FAIL'}\n\n")
                     f.write(json.dumps(report, indent=2))

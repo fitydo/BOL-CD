@@ -2,10 +2,9 @@
 API Key Authentication with Scoped Access Control
 """
 import os
-from fastapi import Header, HTTPException, Depends
+from fastapi import Header, HTTPException
 from typing import Optional, Set
 import hashlib
-import hmac
 import logging
 
 # Parse API keys from environment

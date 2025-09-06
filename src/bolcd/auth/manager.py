@@ -197,7 +197,7 @@ class AuthManager:
             db.refresh(user)
             return User.from_orm(user)
             
-        except ValueError as e:
+        except ValueError:
             # Invalid token
             return None
     

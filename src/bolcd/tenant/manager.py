@@ -286,7 +286,7 @@ class TenantManager:
                 with open(usage_file, 'r') as f:
                     usage = json.load(f)
                     return usage.get(resource, 0)
-            except:
+            except Exception:
                 pass
         return 0
     

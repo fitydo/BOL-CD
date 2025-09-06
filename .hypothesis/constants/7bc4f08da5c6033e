@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/api/auth_routes.py
+# hypothesis_version: 6.137.3
+
+['/api/auth', '/change-password', '/google', '/login', '/me', '/register', 'Invalid credentials', 'Invalid token', 'Not authenticated', 'Registration failed', 'User not found', 'authentication']

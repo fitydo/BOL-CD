@@ -1,7 +1,7 @@
 """Authentication models and schemas."""
 
 from datetime import datetime
-from typing import Optional, Literal
+from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import Column, String, DateTime, Boolean, Integer, Text
 from sqlalchemy.orm import declarative_base

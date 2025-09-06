@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/api/v1/ingest.py
+# hypothesis_version: 6.137.3
+
+[0.01, 2.5, 409, 3600, '/batch', '/sample', '/v1/ingest', '192.168.1.100', 'Alert signature', 'Already exists', 'Entity identifier', 'R-001', 'R-001->R-002', 'R-002', 'R-003', 'Raw event data', 'Rule identifier', 'Severity level', 'account_locked', 'admin', 'alert_id', 'attrs', 'dag_meta', 'decision', 'edge_id', 'edge_meta', 'entity_id', 'error', 'error_details', 'errors', 'failed_login', 'high', 'host-001', 'host-002', 'in_deg', 'ingest', 'internal_error', 'lift', 'low', 'medium', 'multiple_failures', 'ok', 'privilege_escalation', 'processed', 'q_value', 'reason', 'recent_A', 'results', 'root', 'rule_id', 'samples', 'severity', 'signature', 'source_ip', 'support', 'target', 'ts', 'unknown', 'usage', 'user', 'user1', 'why', 'window_sec']

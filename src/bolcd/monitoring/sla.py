@@ -15,8 +15,7 @@ from dataclasses import dataclass, asdict
 from collections import deque
 import statistics
 
-import prometheus_client
-from prometheus_client import Counter, Gauge, Histogram, Summary
+from prometheus_client import Counter, Gauge, Histogram
 
 
 # Prometheus metrics for SLA monitoring
@@ -336,7 +335,7 @@ class SLAMonitor:
                     if file_date >= cutoff_date:
                         with open(file_path, "r") as f:
                             historical.append(json.load(f))
-                except:
+                except Exception:
                     continue
         
         return historical

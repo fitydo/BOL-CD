@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/auth/manager.py
+# hypothesis_version: 6.137.3
+
+['@', 'BOLCD_DATABASE_URL', 'BOLCD_JWT_SECRET', 'Demo Administrator', 'Demo User', 'HS256', 'Security Analyst', 'access', 'admin', 'admin123', 'admin@demo.com', 'analyst', 'analyst123', 'analyst@demo.com', 'demouser', 'email', 'exp', 'google', 'local', 'name', 'picture', 'refresh', 'role', 'sub', 'type', 'user', 'user123', 'user@demo.com', 'user_id', 'utf-8']

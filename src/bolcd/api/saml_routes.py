@@ -1,11 +1,11 @@
 """SAML SSO API routes for BOL-CD"""
 
-from fastapi import APIRouter, Request, Depends, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
-from typing import Dict, Any
+from fastapi import APIRouter, Request, HTTPException
+from fastapi.responses import RedirectResponse, Response
+
 
 from ..auth.saml import SAMLManager, SAML_AVAILABLE
-from ..auth.manager import AuthManager
+# AuthManager imported in SAMLManager, no direct usage here
 
 router = APIRouter(prefix="/api/v1/auth/saml", tags=["SAML SSO"])
 

@@ -215,14 +215,14 @@ def main():
     
     print(f"✅ Generated {len(events)} events")
     print(f"📁 Saved to: {output_path}")
-    print(f"\n📊 Statistics:")
+    print("\n📊 Statistics:")
     print(f"  Time range: {args.hours} hours")
     print(f"  Unique signatures: {len(seen_signatures)}")
     print(f"  Duplicate events: {duplicate_count} ({duplicate_count/len(events)*100:.1f}%)")
-    print(f"\n  Severity distribution:")
+    print("\n  Severity distribution:")
     for sev, count in sorted(severity_counts.items()):
         print(f"    {sev}: {count} ({count/len(events)*100:.1f}%)")
-    print(f"\n  Category distribution:")
+    print("\n  Category distribution:")
     for cat, count in sorted(category_counts.items()):
         print(f"    {cat}: {count} ({count/len(events)*100:.1f}%)")
 

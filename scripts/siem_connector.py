@@ -20,7 +20,7 @@ class SIEMConnector:
         """Splunk REST API connection"""
         import os
         import requests
-        from urllib.parse import quote
+        # from urllib.parse import quote  # unused
         
         # 環境変数から認証情報を取得
         splunk_url = os.getenv('BOLCD_SPLUNK_URL')

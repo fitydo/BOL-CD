@@ -6,9 +6,8 @@ import pytest_asyncio
 import asyncio
 import httpx
 from datetime import datetime, timedelta
-import json
 import os
-from typing import List, Dict, Any
+from typing import Any  # noqa: F401
 
 # Run all tests in this module with pytest-asyncio
 pytestmark = pytest.mark.asyncio
@@ -24,7 +23,7 @@ API_KEY_ADMIN = os.getenv("TEST_API_KEY_ADMIN", "admin-key")
 API_KEY_CONSUMER = os.getenv("TEST_API_KEY_CONSUMER", "test-key")
 
 
-from src.bolcd.api.main import app
+from src.bolcd.api.main import app  # noqa: E402
 
 
 @pytest_asyncio.fixture

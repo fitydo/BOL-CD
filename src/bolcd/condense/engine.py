@@ -1,12 +1,12 @@
 """
 Decision Engine with Integrated False Suppression Validation
 """
-from datetime import datetime, timezone
-from typing import Dict, Any, Optional, List
+from datetime import datetime, timezone, timedelta
+from typing import Dict, Any
 from sqlalchemy.orm import Session
 
 from src.bolcd.condense.policy import (
-    ROOT_PASS, ALLOWLIST, within_near_window, strong_edge, 
+    ROOT_PASS, within_near_window, strong_edge, 
     POLICY_VERSION, should_always_pass, calculate_suppression_confidence,
     FALSE_SUPPRESSION_THRESHOLD
 )
@@ -214,8 +214,6 @@ def _suppress(
         db.commit()
     
     return {"decision": "suppress", "reason": reason}
-
-from datetime import timedelta
 
 class FalseSuppressionValidator:
     """Simplified inline validator"""

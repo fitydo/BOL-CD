@@ -5,7 +5,7 @@ Test connection to local Splunk Enterprise instance
 import requests
 import json
 import urllib3
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Disable SSL warnings for self-signed certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -29,7 +29,7 @@ def get_session_key():
         response = requests.post(url, data=data, verify=False)
         if response.status_code == 200:
             session_key = response.json()['sessionKey']
-            print(f"✅ Successfully authenticated to Splunk Enterprise")
+            print("✅ Successfully authenticated to Splunk Enterprise")
             print(f"📍 Host: {SPLUNK_HOST}:{SPLUNK_PORT}")
             print(f"🔑 Session Key: {session_key[:20]}...")
             return session_key
@@ -202,7 +202,7 @@ def main():
         for st, count in sorted(sourcetypes.items(), key=lambda x: x[1], reverse=True)[:5]:
             print(f"    {st}: {count}")
         
-        print(f"\n🎯 Next step: Run A/B testing with real Splunk data")
+        print("\n🎯 Next step: Run A/B testing with real Splunk data")
         print(f"   python scripts/ab/ab_split.py --in {output_file} --out-dir data/ab_split_splunk --salt 2025")
     else:
         print("\n⚠️ No events found. Check if Splunk has data.")

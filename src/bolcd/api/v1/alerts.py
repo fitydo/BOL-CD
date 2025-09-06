@@ -1,12 +1,12 @@
 """
 Condensed Alert API with Late Replay Support
 """
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_  # noqa: F401
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
 from pydantic import BaseModel
 
 from src.bolcd.db import get_db
@@ -292,7 +292,7 @@ def get_statistics(
     
     # Late replay stats
     late_total = db.query(LateReplay).count()
-    late_delivered = db.query(LateReplay).filter(LateReplay.delivered == True).count()
+    late_delivered = db.query(LateReplay).filter(LateReplay.delivered).count()
     
     # False suppression stats
     high_risk = db.query(Suppressed).filter(

@@ -14,7 +14,7 @@ os.environ["BOLCD_RATE_LIMIT_ENABLED"] = "0"
 os.environ["BOLCD_HASH_METHOD"] = "plain"  # Use plain keys for testing
 
 # Import database models first
-from src.bolcd.models.condense import Base, Alert, DecisionRecord, Suppressed
+from src.bolcd.models.condense import Base
 from src.bolcd.db import get_db
 
 # Test database
@@ -30,7 +30,7 @@ def override_get_db():
         db.close()
 
 # Now import app after environment is set
-from src.bolcd.api.main import app
+from src.bolcd.api.main import app  # noqa: E402
 
 # Create test client at module scope
 client = TestClient(app)
