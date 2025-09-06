@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/metrics/condense_metrics.py
+# hypothesis_version: 6.137.3
+
+[0.0, 0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 'API request duration', 'bolcd_alerts_total', 'bolcd_deliver_total', 'bolcd_suppress_total', 'decision', 'deliver', 'edge_id', 'endpoint', 'entity_id', 'method', 'reason', 'scope', 'severity', 'status', 'suppress', 'unknown', 'why']

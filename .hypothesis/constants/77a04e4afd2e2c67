@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/auth/scim.py
+# hypothesis_version: 6.137.3
+
+[100, '"', '$ref', 'Administrators', 'Group', 'Operators', 'Security Analysts', 'User', 'Viewers', 'admin', 'analyst', 'created', 'display', 'displayName', 'email eq', 'id', 'lastModified', 'location', 'operator', 'resourceType', 'scim', 'user', 'userName eq', 'value', 'viewer', 'work']

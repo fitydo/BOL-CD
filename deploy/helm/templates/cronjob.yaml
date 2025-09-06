@@ -1,0 +1,70 @@
+{{- if .Values.reconciler.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "bolcd.fullname" . }}-reconciler
+  labels:
+    {{- include "bolcd.labels" . | nindent 4 }}
+    app.kubernetes.io/component: reconciler
+spec:
+  schedule: {{ .Values.reconciler.schedule | quote }}
+  successfulJobsHistoryLimit: {{ .Values.reconciler.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.reconciler.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "bolcd.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: reconciler
+        spec:
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          serviceAccountName: {{ include "bolcd.serviceAccountName" . }}
+          securityContext:
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          restartPolicy: OnFailure
+          containers:
+            - name: reconciler
+              securityContext:
+                {{- toYaml .Values.securityContext | nindent 16 }}
+              image: "{{ .Values.reconciler.image.repository }}:{{ .Values.reconciler.image.tag | default .Chart.AppVersion }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command:
+                - python
+                - -m
+                - src.bolcd.jobs.reconciler
+              env:
+                - name: PYTHONPATH
+                  value: "/app:src"
+                - name: DB_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "bolcd.fullname" . }}-secret
+                      key: database-url
+                - name: REDIS_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "bolcd.fullname" . }}-secret
+                      key: redis-url
+                - name: BOLCD_LATE_TTL_SEC
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ include "bolcd.fullname" . }}-config
+                      key: policy-late-ttl-sec
+                - name: BOLCD_FALSE_SUPPRESSION_THRESHOLD
+                  valueFrom:
+                    configMapKeyRef:
+                      name: {{ include "bolcd.fullname" . }}-config
+                      key: policy-false-suppression-threshold
+              resources:
+                {{- toYaml .Values.reconciler.resources | nindent 16 }}
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: tmp
+              emptyDir: {}
+{{- end }}

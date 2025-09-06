@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/condense/engine.py
+# hypothesis_version: 6.137.3
+
+[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 0.8, 0.9, 1.0, 'combined', 'confidence', 'correlation', 'correlation_score', 'critical', 'dag_meta', 'decision', 'deliver', 'edge', 'edge_id', 'edge_meta', 'edge_q', 'high', 'in_deg', 'info', 'low', 'medium', 'no_edge', 'policy_version', 'q', 'q_value', 'rarity', 'rarity_score', 'reason', 'recent_A', 'root_pass', 'severity', 'severity_score', 'suppress', 'validation_score', 'weights', 'why']

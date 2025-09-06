@@ -1,0 +1,305 @@
+{
+  "currency": "JPY",
+  "taxRate": 0.10,
+  "discounts": [
+    {"label_ja": "3年契約 -10%", "label_en": "3-year -10%", "percent": 10},
+    {"label_ja": "5年契約 -15%", "label_en": "5-year -15%", "percent": 15}
+  ],
+  "plans": [
+    {
+      "slug": "starter",
+      "name_ja": "Starter",
+      "name_en": "Starter",
+      "priceAnnual": 6000000,
+      "tagline_ja": "小規模SOC向け",
+      "tagline_en": "For small SOCs",
+      "description_ja": "単一SIEMの重複アラートを効率的に削減",
+      "description_en": "Efficiently reduce duplicate alerts from a single SIEM",
+      "includes_ja": [
+        "単一SIEMコネクタ（Splunk/Sentinel/OpenSearch）",
+        "重複クラスタリング",
+        "週次レポート",
+        "Safe-apply機能",
+        "監査ログ（基本）",
+        "データ保持90日",
+        "席数無制限"
+      ],
+      "includes_en": [
+        "Single SIEM connector (Splunk/Sentinel/OpenSearch)",
+        "Duplicate clustering",
+        "Weekly reports",
+        "Safe-apply feature",
+        "Basic audit logs",
+        "90-day data retention",
+        "Unlimited seats"
+      ],
+      "excludes": ["SSO/SAML", "SCIM", "マルチテナント", "SLA 99.9%"],
+      "cta_ja": "評価を開始",
+      "cta_en": "Start evaluation",
+      "cta_link": "/contact?trial=1"
+    },
+    {
+      "slug": "standard",
+      "name_ja": "Standard",
+      "name_en": "Standard",
+      "priceAnnual": 12000000,
+      "tagline_ja": "中規模エンタープライズ向け",
+      "tagline_en": "For mid-size enterprises",
+      "description_ja": "複数のセキュリティツールを統合して高度な削減を実現",
+      "description_en": "Integrate multiple security tools for advanced reduction",
+      "includes_ja": [
+        "複数SIEM/EDR/クラウド連携",
+        "自動抑制ルール（セーフ適用）",
+        "経営向けROIレポート",
+        "監査ログ（詳細・エクスポート）",
+        "データ保持365日",
+        "SSO/SAML（オプション）",
+        "席数無制限"
+      ],
+      "includes_en": [
+        "Multiple SIEM/EDR/Cloud integration",
+        "Auto-suppression rules (safe-apply)",
+        "Executive ROI reports",
+        "Detailed audit logs with export",
+        "365-day data retention",
+        "SSO/SAML (optional)",
+        "Unlimited seats"
+      ],
+      "excludes": ["SCIM", "マルチテナント", "SLA 99.9%（オプション扱い）"],
+      "cta_ja": "評価を開始",
+      "cta_en": "Start evaluation",
+      "cta_link": "/contact?trial=1",
+      "popular": true
+    },
+    {
+      "slug": "enterprise",
+      "name_ja": "Enterprise",
+      "name_en": "Enterprise",
+      "priceAnnual": 24000000,
+      "priceNote_ja": "〜/年（要見積）",
+      "priceNote_en": "+/year (quote)",
+      "tagline_ja": "大規模組織・MSSP向け",
+      "tagline_en": "For large orgs & MSSPs",
+      "description_ja": "マルチテナント対応の完全なエンタープライズソリューション",
+      "description_en": "Complete enterprise solution with multi-tenancy",
+      "includes_ja": [
+        "マルチテナント対応",
+        "SSO/SAML込み",
+        "SCIM込み",
+        "詳細監査・DLP",
+        "データ保持ポリシー選択（無期限可）",
+        "SLA 99.9%",
+        "閉域/オンプレ対応",
+        "専任CSM・導入SOW込み"
+      ],
+      "includes_en": [
+        "Multi-tenant support",
+        "SSO/SAML included",
+        "SCIM included",
+        "Advanced audit & DLP",
+        "Flexible retention policy (unlimited)",
+        "99.9% SLA",
+        "Private/on-premise deployment",
+        "Dedicated CSM & implementation"
+      ],
+      "excludes": [],
+      "cta_ja": "営業に問い合わせ",
+      "cta_en": "Contact sales",
+      "cta_link": "/contact?sales=1"
+    }
+  ],
+  "addons": [
+    {
+      "slug": "mssp",
+      "name_ja": "MSSPアドオン",
+      "name_en": "MSSP Add-on",
+      "unitPriceAnnual": 1500000,
+      "unitLabel_ja": "1テナントあたり/年",
+      "unitLabel_en": "per tenant/year",
+      "description_ja": "管理顧客ごとの追加テナント",
+      "description_en": "Additional tenant per managed customer",
+      "features_ja": [
+        "テナント分離",
+        "個別ダッシュボード",
+        "従量課金オプション"
+      ],
+      "features_en": [
+        "Tenant isolation",
+        "Individual dashboards",
+        "Usage-based pricing option"
+      ],
+      "cta_ja": "営業に問い合わせ",
+      "cta_en": "Contact sales",
+      "cta_link": "/contact?sales=1"
+    },
+    {
+      "slug": "poc",
+      "name_ja": "有償PoC",
+      "name_en": "Paid PoC",
+      "priceRange": [2000000, 3000000],
+      "durationWeeks": [8, 12],
+      "note_ja": "KPI達成で初年度費用に充当可",
+      "note_en": "Offset to Year-1 if KPIs met",
+      "description_ja": "実環境での効果測定と導入準備",
+      "description_en": "Real environment validation and deployment prep",
+      "kpis_ja": [
+        "総削減率測定",
+        "重複クラスタ率分析",
+        "L1時間削減効果",
+        "取り込みGB削減"
+      ],
+      "kpis_en": [
+        "Total reduction rate",
+        "Duplicate cluster analysis",
+        "L1 time savings",
+        "Ingestion GB reduction"
+      ],
+      "cta_ja": "有償PoCを相談",
+      "cta_en": "Discuss PoC",
+      "cta_link": "/contact?poc=1"
+    }
+  ],
+  "features": [
+    {
+      "key": "siem_single",
+      "label_ja": "単一SIEM連携",
+      "label_en": "Single SIEM integration",
+      "tooltip_ja": "Splunk, Azure Sentinel, OpenSearchから選択",
+      "tooltip_en": "Choose from Splunk, Azure Sentinel, OpenSearch",
+      "plans": ["starter", "standard", "enterprise"]
+    },
+    {
+      "key": "siem_multi",
+      "label_ja": "複数SIEM/EDR/クラウド連携",
+      "label_en": "Multi-SIEM/EDR/Cloud",
+      "tooltip_ja": "複数のセキュリティツールを同時接続",
+      "tooltip_en": "Connect multiple security tools simultaneously",
+      "plans": ["standard", "enterprise"]
+    },
+    {
+      "key": "dup_cluster",
+      "label_ja": "重複クラスタリング",
+      "label_en": "Duplicate clustering",
+      "tooltip_ja": "AIによる自動重複検出と束ね処理",
+      "tooltip_en": "AI-powered duplicate detection and grouping",
+      "plans": ["starter", "standard", "enterprise"]
+    },
+    {
+      "key": "auto_suppress",
+      "label_ja": "自動抑制ルール",
+      "label_en": "Auto-suppression rules",
+      "tooltip_ja": "安全な抑制ルールの自動生成と適用",
+      "tooltip_en": "Automatic generation and application of safe suppression rules",
+      "plans": ["standard", "enterprise"]
+    },
+    {
+      "key": "sso",
+      "label_ja": "SSO/SAML",
+      "label_en": "SSO/SAML",
+      "tooltip_ja": "シングルサインオン対応",
+      "tooltip_en": "Single sign-on support",
+      "plans": ["standard", "enterprise"],
+      "notes": {"standard": "オプション", "enterprise": "込み"}
+    },
+    {
+      "key": "scim",
+      "label_ja": "SCIMプロビジョニング",
+      "label_en": "SCIM provisioning",
+      "tooltip_ja": "自動ユーザー管理",
+      "tooltip_en": "Automated user management",
+      "plans": ["enterprise"]
+    },
+    {
+      "key": "audit",
+      "label_ja": "監査ログ",
+      "label_en": "Audit logs",
+      "tooltip_ja": "操作履歴の詳細記録とエクスポート",
+      "tooltip_en": "Detailed activity logging and export",
+      "plans": ["starter", "standard", "enterprise"],
+      "notes": {"starter": "基本", "standard": "詳細", "enterprise": "詳細+DLP"}
+    },
+    {
+      "key": "sla",
+      "label_ja": "SLA 99.9%",
+      "label_en": "99.9% SLA",
+      "tooltip_ja": "エンタープライズグレードの可用性保証",
+      "tooltip_en": "Enterprise-grade availability guarantee",
+      "plans": ["enterprise"]
+    },
+    {
+      "key": "retention",
+      "label_ja": "データ保持",
+      "label_en": "Data retention",
+      "tooltip_ja": "アラートデータの保持期間",
+      "tooltip_en": "Alert data retention period",
+      "plans": ["starter", "standard", "enterprise"],
+      "notes": {"starter": "90日", "standard": "365日", "enterprise": "無期限可"}
+    },
+    {
+      "key": "multi_tenant",
+      "label_ja": "マルチテナント",
+      "label_en": "Multi-tenancy",
+      "tooltip_ja": "複数組織の分離管理",
+      "tooltip_en": "Isolated management for multiple organizations",
+      "plans": ["enterprise"]
+    },
+    {
+      "key": "deployment",
+      "label_ja": "デプロイメント",
+      "label_en": "Deployment",
+      "tooltip_ja": "展開オプション",
+      "tooltip_en": "Deployment options",
+      "plans": ["starter", "standard", "enterprise"],
+      "notes": {"starter": "SaaS", "standard": "SaaS", "enterprise": "SaaS/オンプレ/閉域"}
+    },
+    {
+      "key": "support",
+      "label_ja": "サポート",
+      "label_en": "Support",
+      "tooltip_ja": "カスタマーサポートレベル",
+      "tooltip_en": "Customer support level",
+      "plans": ["starter", "standard", "enterprise"],
+      "notes": {"starter": "メール", "standard": "優先サポート", "enterprise": "専任CSM"}
+    }
+  ],
+  "valueProof": {
+    "ja": "実運用短報：アラート58.5%削減 / High・Criticalで誤抑制0% / 1ノード50k EPS",
+    "en": "Field brief: 58.5% alert reduction / 0% false suppression on High/Critical / 50k EPS per node"
+  },
+  "footnotes": {
+    "ja": "[*] 社内検証・受入試験の短報に基づく実績値です。導入環境により効果は異なります。",
+    "en": "[*] Based on internal validation and acceptance tests; results vary by environment."
+  },
+  "faqs": [
+    {
+      "question_ja": "月額プランはありますか？",
+      "question_en": "Do you offer monthly plans?",
+      "answer_ja": "年契約のみとなります。表示の月額換算は比較用の参考値です。",
+      "answer_en": "Annual contracts only. Monthly equivalents shown for comparison purposes."
+    },
+    {
+      "question_ja": "従量課金はありますか？",
+      "question_en": "Is there usage-based pricing?",
+      "answer_ja": "日量クレジット超過時に適用されます（個別お見積り）。",
+      "answer_en": "Applied when daily credits are exceeded (custom quote required)."
+    },
+    {
+      "question_ja": "PoC費用は返金されますか？",
+      "question_en": "Is the PoC fee refundable?",
+      "answer_ja": "KPI達成時に初年度費用へ充当可能です（要契約条項）。",
+      "answer_en": "Can be offset against Year-1 fees if KPIs are met (contract terms apply)."
+    },
+    {
+      "question_ja": "SSO/SAMLはどのプランで利用できますか？",
+      "question_en": "Which plans include SSO/SAML?",
+      "answer_ja": "Enterpriseプランは標準搭載、Standardプランはオプション、Starterプランは対象外です。",
+      "answer_en": "Included in Enterprise, optional for Standard, not available in Starter."
+    },
+    {
+      "question_ja": "導入までの流れを教えてください",
+      "question_en": "What's the implementation process?",
+      "answer_ja": "14日間の無料評価 → 有償PoC（任意） → 本契約（12か月〜）の流れとなります。",
+      "answer_en": "14-day free evaluation → Paid PoC (optional) → Production contract (12+ months)."
+    }
+  ]
+}

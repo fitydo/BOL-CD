@@ -1,0 +1,34 @@
+apiVersion: v2
+name: bolcd
+description: BOL-CD - Security Operations Alert Reduction Platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - security
+  - siem
+  - alert-reduction
+  - soc
+home: https://github.com/your-org/bolcd
+sources:
+  - https://github.com/your-org/bolcd
+maintainers:
+  - name: BOL-CD Team
+    email: team@bolcd.example.com
+dependencies:
+  - name: postgresql
+    version: "12.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: "17.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  - name: prometheus
+    version: "19.x.x"
+    repository: https://prometheus-community.github.io/helm-charts
+    condition: prometheus.enabled
+  - name: grafana
+    version: "6.x.x"
+    repository: https://grafana.github.io/helm-charts
+    condition: grafana.enabled

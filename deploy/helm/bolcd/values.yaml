@@ -1,0 +1,220 @@
+# Default values for BOL-CD Helm chart
+
+replicaCount: 2
+
+image:
+  repository: bolcd
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9090"
+  prometheus.io/path: "/metrics"
+
+podSecurityContext:
+  fsGroup: 2000
+  runAsNonRoot: true
+  runAsUser: 1000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8080
+  annotations: {}
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+  hosts:
+    - host: bolcd.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: bolcd-tls
+      hosts:
+        - bolcd.example.com
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - bolcd
+        topologyKey: kubernetes.io/hostname
+
+persistence:
+  enabled: true
+  storageClass: "standard"
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  mountPath: /var/lib/bolcd/data
+
+env:
+  BOLCD_ENV: "production"
+  BOLCD_LOG_LEVEL: "info"
+  BOLCD_API_HOST: "0.0.0.0"
+  BOLCD_API_PORT: "8080"
+
+secrets:
+  database_url: ""
+  redis_url: ""
+  jwt_secret: ""
+  saml_cert: ""
+  saml_key: ""
+
+configMap:
+  saml.yaml: |
+    # SAML configuration
+  scim.yaml: |
+    # SCIM configuration
+  retention.yaml: |
+    # Retention policy configuration
+  sla.yaml: |
+    # SLA targets configuration
+
+postgresql:
+  enabled: true
+  auth:
+    database: bolcd
+    username: bolcd_user
+    existingSecret: ""
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+  metrics:
+    enabled: true
+
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    existingSecret: ""
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+  replica:
+    replicaCount: 1
+    persistence:
+      enabled: true
+      size: 5Gi
+  metrics:
+    enabled: true
+
+prometheus:
+  enabled: true
+  server:
+    retention: "30d"
+    persistentVolume:
+      enabled: true
+      size: 10Gi
+  alertmanager:
+    enabled: true
+    persistentVolume:
+      enabled: true
+      size: 2Gi
+
+grafana:
+  enabled: true
+  adminUser: admin
+  adminPassword: changeme
+  persistence:
+    enabled: true
+    size: 5Gi
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+      - name: Prometheus
+        type: prometheus
+        url: http://prometheus-server
+        access: proxy
+        isDefault: true
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    path: /metrics
+  prometheusRule:
+    enabled: true
+    rules:
+      - alert: BolcdHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+      - alert: BolcdPodDown
+        expr: up{job="bolcd"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "BOL-CD pod is down"
+
+backup:
+  enabled: true
+  schedule: "0 2 * * *"
+  retention: 30
+  s3:
+    bucket: ""
+    region: ""
+    endpoint: ""
+
+tests:
+  enabled: true
+  image: "busybox:latest"

@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/api/v1/alerts.py
+# hypothesis_version: 6.137.3
+
+[0.5, 100, 401, 403, 404, 1000, '/late', '/stats', '/v1/alerts', '/{alert_id}/explain', 'Alert not found', 'Unauthorized', 'X-Delivered-Late', 'X-Edge-Id', 'X-Policy-Version', 'X-Q-Value', 'admin', 'alert', 'alerts', 'attrs', 'condensed', 'confidence', 'count', 'created_at', 'decision', 'deliver', 'delivered', 'delta', 'details', 'edge_id', 'entity_id', 'full', 'id', 'items', 'late_delivery', 'late_replay', 'late_ts', 'limit', 'meta', 'method', 'offset', 'original_ts', 'pending', 'period', 'policy_version', 'q_value', 'reason', 'risk_rate', 'rule_id', 'scope', 'score', 'severity', 'signature', 'since', 'stats', 'status', 'suppress', 'suppressed', 'suppression', 'suppression_rate', 'timestamp', 'total', 'total_delivered', 'total_suppressed', 'totals', 'true', 'ts', 'type', 'unknown', 'until', 'validation', 'validation_details', 'validation_method', 'validations', 'view']

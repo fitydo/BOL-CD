@@ -1,266 +1,95 @@
 {
   "version": "2.0",
-  "timestamp": "2025-09-05T17:57:43.526933",
+  "timestamp": "2025-09-05T21:55:37.672488",
   "suppression_rules": [
     {
-      "pattern": "web-prod-01:RULE-0888",
+      "pattern": "web-prod-01:RULE-0507",
       "entity": "web-prod-01",
-      "rule": "RULE-0888",
-      "min_count": 2,
+      "rule": "RULE-0507",
+      "min_count": 4,
       "window": 3600,
-      "confidence": 0.02
+      "confidence": 0.052
     },
     {
-      "pattern": "web-prod-02:RULE-0241",
+      "pattern": "web-prod-02:RULE-0136",
       "entity": "web-prod-02",
-      "rule": "RULE-0241",
-      "min_count": 2,
+      "rule": "RULE-0136",
+      "min_count": 4,
       "window": 3600,
-      "confidence": 0.02
+      "confidence": 0.052
     },
     {
-      "pattern": "db-master-01:RULE-0738",
+      "pattern": "db-master-01:RULE-0815",
       "entity": "db-master-01",
-      "rule": "RULE-0738",
-      "min_count": 2,
+      "rule": "RULE-0815",
+      "min_count": 4,
       "window": 3600,
-      "confidence": 0.02
+      "confidence": 0.052
     },
     {
-      "pattern": "db-slave-01:RULE-0215",
+      "pattern": "db-slave-01:RULE-0776",
       "entity": "db-slave-01",
-      "rule": "RULE-0215",
-      "min_count": 2,
+      "rule": "RULE-0776",
+      "min_count": 4,
       "window": 3600,
-      "confidence": 0.02
+      "confidence": 0.052
     },
     {
-      "pattern": "app-server-01:RULE-0004",
+      "pattern": "app-server-01:RULE-0014",
       "entity": "app-server-01",
-      "rule": "RULE-0004",
-      "min_count": 2,
+      "rule": "RULE-0014",
+      "min_count": 4,
       "window": 3600,
-      "confidence": 0.02
+      "confidence": 0.052
     },
     {
-      "pattern": "app-server-02:RULE-0836",
+      "pattern": "app-server-02:RULE-0068",
       "entity": "app-server-02",
-      "rule": "RULE-0836",
-      "min_count": 2,
+      "rule": "RULE-0068",
+      "min_count": 4,
       "window": 3600,
-      "confidence": 0.02
+      "confidence": 0.052
     },
     {
-      "pattern": "proxy-01:RULE-0686",
+      "pattern": "proxy-01:RULE-0507",
       "entity": "proxy-01",
-      "rule": "RULE-0686",
-      "min_count": 2,
+      "rule": "RULE-0507",
+      "min_count": 4,
       "window": 3600,
-      "confidence": 0.02
+      "confidence": 0.052
     },
     {
-      "pattern": "proxy-02:RULE-0907",
+      "pattern": "proxy-02:RULE-0136",
       "entity": "proxy-02",
-      "rule": "RULE-0907",
-      "min_count": 2,
+      "rule": "RULE-0136",
+      "min_count": 4,
       "window": 3600,
-      "confidence": 0.02
+      "confidence": 0.052
     },
     {
-      "pattern": "mail-server-01:RULE-0888",
+      "pattern": "mail-server-01:RULE-0815",
       "entity": "mail-server-01",
-      "rule": "RULE-0888",
-      "min_count": 2,
+      "rule": "RULE-0815",
+      "min_count": 4,
       "window": 3600,
-      "confidence": 0.02
+      "confidence": 0.052
     },
     {
-      "pattern": "file-server-01:RULE-0241",
+      "pattern": "file-server-01:RULE-0776",
       "entity": "file-server-01",
-      "rule": "RULE-0241",
-      "min_count": 2,
+      "rule": "RULE-0776",
+      "min_count": 4,
       "window": 3600,
-      "confidence": 0.02
+      "confidence": 0.052
     }
   ],
   "threshold_rules": [
     {
-      "frequency_threshold": 0.007722222222222194,
+      "frequency_threshold": 0.025999999999999867,
       "burst_threshold": 4.999994999699275e-07,
       "similarity_threshold": 0.0,
       "action": "suppress_if_all_exceed"
     }
   ],
-  "ensemble_rules": [
-    {
-      "entity": "proxy-02",
-      "rules": [
-        "RULE-0241",
-        "RULE-0624",
-        "RULE-0719",
-        "RULE-0547",
-        "RULE-0907",
-        "RULE-0810",
-        "RULE-0735",
-        "RULE-0549",
-        "RULE-0215",
-        "RULE-0836"
-      ],
-      "threshold": 5,
-      "window": 3600,
-      "action": "group_throttle"
-    },
-    {
-      "entity": "web-prod-02",
-      "rules": [
-        "RULE-0241",
-        "RULE-0188",
-        "RULE-0907",
-        "RULE-0810",
-        "RULE-0549",
-        "RULE-0993",
-        "RULE-0689",
-        "RULE-0215",
-        "RULE-0836"
-      ],
-      "threshold": 4,
-      "window": 3600,
-      "action": "group_throttle"
-    },
-    {
-      "entity": "db-master-01",
-      "rules": [
-        "RULE-0969",
-        "RULE-0004",
-        "RULE-0135",
-        "RULE-0532",
-        "RULE-0738",
-        "RULE-0397",
-        "RULE-0686",
-        "RULE-0888",
-        "RULE-0305"
-      ],
-      "threshold": 4,
-      "window": 3600,
-      "action": "group_throttle"
-    },
-    {
-      "entity": "db-slave-01",
-      "rules": [
-        "RULE-0950",
-        "RULE-0256",
-        "RULE-0241",
-        "RULE-0188",
-        "RULE-0907",
-        "RULE-0549",
-        "RULE-0993",
-        "RULE-0215",
-        "RULE-0836"
-      ],
-      "threshold": 4,
-      "window": 3600,
-      "action": "group_throttle"
-    },
-    {
-      "entity": "app-server-01",
-      "rules": [
-        "RULE-0663",
-        "RULE-0004",
-        "RULE-0532",
-        "RULE-0838",
-        "RULE-0738",
-        "RULE-0686",
-        "RULE-0888",
-        "RULE-0315",
-        "RULE-0305"
-      ],
-      "threshold": 4,
-      "window": 3600,
-      "action": "group_throttle"
-    },
-    {
-      "entity": "app-server-02",
-      "rules": [
-        "RULE-0950",
-        "RULE-0241",
-        "RULE-0624",
-        "RULE-0719",
-        "RULE-0547",
-        "RULE-0907",
-        "RULE-0549",
-        "RULE-0215",
-        "RULE-0836"
-      ],
-      "threshold": 4,
-      "window": 3600,
-      "action": "group_throttle"
-    },
-    {
-      "entity": "proxy-01",
-      "rules": [
-        "RULE-0663",
-        "RULE-0004",
-        "RULE-0406",
-        "RULE-0825",
-        "RULE-0738",
-        "RULE-0686",
-        "RULE-0888",
-        "RULE-0315",
-        "RULE-0462"
-      ],
-      "threshold": 4,
-      "window": 3600,
-      "action": "group_throttle"
-    },
-    {
-      "entity": "mail-server-01",
-      "rules": [
-        "RULE-0969",
-        "RULE-0004",
-        "RULE-0135",
-        "RULE-0571",
-        "RULE-0406",
-        "RULE-0825",
-        "RULE-0738",
-        "RULE-0686",
-        "RULE-0888"
-      ],
-      "threshold": 4,
-      "window": 3600,
-      "action": "group_throttle"
-    },
-    {
-      "entity": "file-server-01",
-      "rules": [
-        "RULE-0241",
-        "RULE-0188",
-        "RULE-0907",
-        "RULE-0810",
-        "RULE-0549",
-        "RULE-0993",
-        "RULE-0689",
-        "RULE-0215",
-        "RULE-0836"
-      ],
-      "threshold": 4,
-      "window": 3600,
-      "action": "group_throttle"
-    },
-    {
-      "entity": "web-prod-01",
-      "rules": [
-        "RULE-0969",
-        "RULE-0004",
-        "RULE-0135",
-        "RULE-0406",
-        "RULE-0825",
-        "RULE-0738",
-        "RULE-0686",
-        "RULE-0888"
-      ],
-      "threshold": 4,
-      "window": 3600,
-      "action": "group_throttle"
-    }
-  ]
+  "ensemble_rules": []
 }

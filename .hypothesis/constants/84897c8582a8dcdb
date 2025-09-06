@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/api/main.py
+# hypothesis_version: 6.137.3
+
+[8000, '*', '/', '/docs', '/health', '/metrics', '/v1/alerts', '/v1/alerts/late', '/v1/alerts/stats', '/v1/ingest', '0.0.0.0', '1.0.0', 'Database initialized', 'Full audit trail', 'Prometheus metrics', 'X-Process-Time', '__main__', 'alerts', 'bolcd-condensed-api', 'docs', 'endpoints', 'explain', 'features', 'health', 'healthy', 'http', 'ingest', 'late_replay', 'metrics', 'service', 'stats', 'status', 'version']

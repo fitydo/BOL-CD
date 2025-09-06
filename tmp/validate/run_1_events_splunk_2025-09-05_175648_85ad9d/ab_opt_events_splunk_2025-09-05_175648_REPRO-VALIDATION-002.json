@@ -14,13 +14,13 @@
     "rules": 7
   },
   "B": {
-    "total": 24,
-    "unique": 8,
-    "duplicates": 16,
-    "entities": 7,
-    "rules": 3
+    "total": 38,
+    "unique": 11,
+    "duplicates": 27,
+    "entities": 9,
+    "rules": 4
   },
-  "reduction_by_count": 0.4782608695652174,
-  "reduction_by_unique": 0.5555555555555556,
-  "new_in_b": 8
+  "reduction_by_count": 0.17391304347826086,
+  "reduction_by_unique": 0.3888888888888889,
+  "new_in_b": 11
 }

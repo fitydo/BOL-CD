@@ -1,0 +1,231 @@
+groups:
+  - name: bolcd_alerts
+    interval: 30s
+    rules:
+      # Application alerts
+      - alert: BolcdApplicationDown
+        expr: up{job="bolcd-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: application
+        annotations:
+          summary: "BOL-CD application instance {{ $labels.instance }} is down"
+          description: "BOL-CD application instance {{ $labels.instance }} has been down for more than 1 minute."
+
+      - alert: BolcdHighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="bolcd-app",status=~"5.."}[5m])) by (instance)
+            /
+            sum(rate(http_requests_total{job="bolcd-app"}[5m])) by (instance)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: application
+        annotations:
+          summary: "High error rate on {{ $labels.instance }}"
+          description: "Error rate is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+
+      - alert: BolcdHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="bolcd-app"}[5m])) by (le, instance)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: application
+        annotations:
+          summary: "High latency on {{ $labels.instance }}"
+          description: "95th percentile latency is {{ $value }}s on {{ $labels.instance }}"
+
+      - alert: BolcdHighMemoryUsage
+        expr: |
+          (
+            container_memory_usage_bytes{pod=~"bolcd-.*"}
+            / 
+            container_spec_memory_limit_bytes{pod=~"bolcd-.*"}
+          ) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: application
+        annotations:
+          summary: "High memory usage for {{ $labels.pod }}"
+          description: "Memory usage is {{ $value | humanizePercentage }} for pod {{ $labels.pod }}"
+
+      # Database alerts
+      - alert: PostgresDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database has been down for more than 1 minute."
+
+      - alert: PostgresHighConnections
+        expr: |
+          (
+            pg_stat_database_numbackends{datname="bolcd"}
+            /
+            pg_settings_max_connections
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "High number of PostgreSQL connections"
+          description: "PostgreSQL connection usage is {{ $value | humanizePercentage }}"
+
+      - alert: PostgresSlowQueries
+        expr: |
+          rate(pg_stat_database_blks_read{datname="bolcd"}[5m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "High disk read rate in PostgreSQL"
+          description: "PostgreSQL is reading {{ $value }} blocks/sec from disk"
+
+      - alert: PostgresReplicationLag
+        expr: |
+          pg_replication_lag_seconds > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "PostgreSQL replication lag is high"
+          description: "Replication lag is {{ $value }}s"
+
+      # Redis alerts
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: cache
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cache has been down for more than 1 minute."
+
+      - alert: RedisHighMemoryUsage
+        expr: |
+          (
+            redis_memory_used_bytes
+            /
+            redis_memory_max_bytes
+          ) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}"
+
+      - alert: RedisHighKeyEviction
+        expr: |
+          rate(redis_evicted_keys_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "High Redis key eviction rate"
+          description: "Redis is evicting {{ $value }} keys/sec"
+
+      # System alerts
+      - alert: HighCPUUsage
+        expr: |
+          (
+            100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+          ) > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}"
+
+      - alert: HighDiskUsage
+        expr: |
+          (
+            node_filesystem_size_bytes{mountpoint="/"}
+            -
+            node_filesystem_free_bytes{mountpoint="/"}
+          ) / node_filesystem_size_bytes{mountpoint="/"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+
+      - alert: DiskWillFillIn24Hours
+        expr: |
+          predict_linear(
+            node_filesystem_free_bytes{mountpoint="/"}[6h], 
+            24 * 3600
+          ) < 0
+        for: 30m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Disk will fill in 24 hours on {{ $labels.instance }}"
+          description: "Based on recent usage, disk will fill within 24 hours on {{ $labels.instance }}"
+
+      # Business metrics alerts
+      - alert: LowAlertReductionRate
+        expr: |
+          bolcd_ab_reduction_rate < 0.4
+        for: 1h
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "Alert reduction rate is below target"
+          description: "Alert reduction rate is {{ $value | humanizePercentage }}, below 40% target"
+
+      - alert: HighFalseSuppressionRate
+        expr: |
+          bolcd_ab_false_suppression_rate > 0.1
+        for: 30m
+        labels:
+          severity: critical
+          component: business
+        annotations:
+          summary: "High false suppression rate detected"
+          description: "False suppression rate is {{ $value | humanizePercentage }}, above 10% threshold"
+
+      - alert: SLAViolation
+        expr: |
+          bolcd_sla_compliance == 0
+        for: 5m
+        labels:
+          severity: critical
+          component: business
+        annotations:
+          summary: "SLA violation detected"
+          description: "SLA targets are not being met"
+
+      # Certificate expiry
+      - alert: CertificateExpiringSoon
+        expr: |
+          probe_ssl_earliest_cert_expiry - time() < 30 * 24 * 3600
+        for: 1h
+        labels:
+          severity: warning
+          component: security
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate for {{ $labels.instance }} expires in {{ $value | humanizeDuration }}"

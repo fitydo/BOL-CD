@@ -136,11 +136,20 @@ class ABMLPipeline:
             should_suppress = False
             
             # 抑制ルールをチェック
-            for rule in rules.get('suppression_rules', []):
-                pattern = f"{event.get('entity_id')}:{event.get('rule_id')}"
-                if pattern == rule['pattern']:
+            # composite_rulesをチェック
+            for rule in rules.get('composite_rules', []):
+                if (event.get('entity_id') == rule.get('entity') and 
+                    event.get('rule_id') == rule.get('rule')):
                     should_suppress = True
                     break
+            
+            # suppression_rulesもチェック（後方互換性）
+            if not should_suppress:
+                for rule in rules.get('suppression_rules', []):
+                    pattern = f"{event.get('entity_id')}:{event.get('rule_id')}"
+                    if pattern == rule.get('pattern', ''):
+                        should_suppress = True
+                        break
             
             if should_suppress:
                 suppressed.append(event)

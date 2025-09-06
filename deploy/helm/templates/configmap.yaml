@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bolcd.fullname" . }}-config
+  labels:
+    {{- include "bolcd.labels" . | nindent 4 }}
+data:
+  policy-alpha: {{ .Values.config.policy.alpha | quote }}
+  policy-support-min: {{ .Values.config.policy.supportMin | quote }}
+  policy-lift-min: {{ .Values.config.policy.liftMin | quote }}
+  policy-near-window-sec: {{ .Values.config.policy.nearWindowSec | quote }}
+  policy-late-ttl-sec: {{ .Values.config.policy.lateTtlSec | quote }}
+  policy-false-suppression-threshold: {{ .Values.config.policy.falseSuppressionThreshold | quote }}
+  policy-high-severity-protection: {{ .Values.config.policy.highSeverityProtection | quote }}
+  policy-root-pass: {{ .Values.config.policy.rootPass | quote }}
+  policy-allowlist-rules: {{ .Values.config.policy.allowlistRules | quote }}
+  policy-version: {{ .Values.config.policy.policyVersion | quote }}
+  rate-limit-enabled: {{ .Values.config.rateLimit.enabled | quote }}
+  rate-limit-rpm: {{ .Values.config.rateLimit.requestsPerMinute | quote }}
+  rate-limit-burst: {{ .Values.config.rateLimit.burstSize | quote }}
+  logging-level: {{ .Values.config.monitoring.loggingLevel | quote }}
+  logging-format: {{ .Values.config.monitoring.loggingFormat | quote }}

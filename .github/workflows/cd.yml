@@ -1,0 +1,382 @@
+name: CD - Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Database Migration Job
+  db-migration:
+    name: Database Migration
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install alembic sqlalchemy psycopg2-binary
+
+      - name: Run Alembic Migrations
+        env:
+          DB_URL: ${{ secrets.DB_URL }}
+        run: |
+          # Create alembic.ini if not exists
+          if [ ! -f alembic.ini ]; then
+            cat > alembic.ini << EOF
+          [alembic]
+          script_location = migrations
+          prepend_sys_path = .
+          sqlalchemy.url = ${DB_URL}
+          
+          [loggers]
+          keys = root,sqlalchemy,alembic
+          
+          [handlers]
+          keys = console
+          
+          [formatters]
+          keys = generic
+          
+          [logger_root]
+          level = WARN
+          handlers = console
+          qualname =
+          
+          [logger_sqlalchemy]
+          level = WARN
+          handlers =
+          qualname = sqlalchemy.engine
+          
+          [logger_alembic]
+          level = INFO
+          handlers =
+          qualname = alembic
+          
+          [handler_console]
+          class = StreamHandler
+          args = (sys.stderr,)
+          level = NOTSET
+          formatter = generic
+          
+          [formatter_generic]
+          format = %(levelname)-5.5s [%(name)s] %(message)s
+          datefmt = %H:%M:%S
+          EOF
+          fi
+          
+          # Initialize alembic if needed
+          if [ ! -d migrations ]; then
+            alembic init migrations
+            # Generate initial migration
+            alembic revision --autogenerate -m "Initial migration for condensed alerts"
+          fi
+          
+          # Run migrations
+          alembic upgrade head
+
+  # Integration Tests
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [db-migration]
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: bolcd_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx
+
+      - name: Run Integration Tests
+        env:
+          DB_URL: postgresql://postgres:testpass@localhost:5432/bolcd_test
+          REDIS_URL: redis://localhost:6379
+          BOLCD_API_KEYS: "test:test-key,admin:admin-key"
+          PYTHONPATH: "${PYTHONPATH}:src"
+        run: |
+          # Start the API server in background
+          python src/bolcd/api/main.py &
+          API_PID=$!
+          
+          # Wait for API to be ready
+          for i in {1..30}; do
+            if curl -f http://localhost:8000/health; then
+              break
+            fi
+            sleep 1
+          done
+          
+          # Run integration tests
+          pytest tests/integration/ -v
+          
+          # Stop API server
+          kill $API_PID
+
+  # Deploy to Kubernetes
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: [integration-test]
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.28.0'
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.4'
+
+      - name: Configure kubectl
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          mkdir -p ~/.kube
+          echo "$KUBE_CONFIG" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Deploy with Helm
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment || 'staging' }}
+        run: |
+          # Create namespace if not exists
+          kubectl create namespace bolcd-${ENVIRONMENT} --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Create secrets
+          kubectl create secret generic bolcd-secrets \
+            --from-literal=db-url='${{ secrets.DB_URL }}' \
+            --from-literal=api-keys='${{ secrets.BOLCD_API_KEYS }}' \
+            --from-literal=splunk-token='${{ secrets.BOLCD_SPLUNK_TOKEN }}' \
+            --namespace=bolcd-${ENVIRONMENT} \
+            --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Deploy with Helm
+          helm upgrade --install bolcd ./deploy/helm \
+            --namespace bolcd-${ENVIRONMENT} \
+            --values ./deploy/helm/values.yaml \
+            --values ./deploy/helm/values-${ENVIRONMENT}.yaml \
+            --set image.tag=${GITHUB_SHA::7} \
+            --set environment=${ENVIRONMENT} \
+            --wait --timeout 10m
+
+      - name: Verify Deployment
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment || 'staging' }}
+        run: |
+          # Check deployment status
+          kubectl rollout status deployment/bolcd-api -n bolcd-${ENVIRONMENT}
+          kubectl rollout status deployment/bolcd-reconciler -n bolcd-${ENVIRONMENT}
+          
+          # Check pods
+          kubectl get pods -n bolcd-${ENVIRONMENT}
+          
+          # Run smoke tests
+          kubectl run smoke-test --rm -i --restart=Never \
+            --image=curlimages/curl:latest \
+            --namespace=bolcd-${ENVIRONMENT} \
+            -- curl -f http://bolcd-api:8000/health
+
+  # Performance Testing
+  performance-test:
+    name: Performance Testing
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: github.event.inputs.environment == 'staging' || github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install k6
+        run: |
+          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Run Performance Tests
+        env:
+          API_URL: ${{ secrets.STAGING_API_URL }}
+          API_KEY: ${{ secrets.TEST_API_KEY }}
+        run: |
+          # Create k6 test script
+          cat > performance-test.js << 'EOF'
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+          
+          export let options = {
+            stages: [
+              { duration: '30s', target: 10 },
+              { duration: '1m', target: 50 },
+              { duration: '2m', target: 100 },
+              { duration: '30s', target: 0 },
+            ],
+            thresholds: {
+              http_req_duration: ['p(95)<500', 'p(99)<1000'],
+              http_req_failed: ['rate<0.1'],
+            },
+          };
+          
+          const API_URL = __ENV.API_URL || 'http://localhost:8000';
+          const API_KEY = __ENV.API_KEY || 'test-key';
+          
+          export default function() {
+            // Test condensed alerts endpoint
+            let res = http.get(`${API_URL}/v1/alerts?view=condensed`, {
+              headers: { 'X-API-Key': API_KEY },
+            });
+            check(res, {
+              'status is 200': (r) => r.status === 200,
+              'response time < 500ms': (r) => r.timings.duration < 500,
+            });
+            
+            // Test ingest endpoint
+            let payload = JSON.stringify({
+              ts: new Date().toISOString(),
+              entity_id: 'host-' + Math.floor(Math.random() * 100),
+              rule_id: 'R-' + Math.floor(Math.random() * 1000),
+              severity: ['low', 'medium', 'high', 'critical'][Math.floor(Math.random() * 4)],
+              signature: 'test_signature',
+              attrs: { test: true }
+            });
+            
+            res = http.post(`${API_URL}/v1/ingest`, payload, {
+              headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': API_KEY,
+              },
+            });
+            check(res, {
+              'ingest status is 200': (r) => r.status === 200,
+            });
+            
+            sleep(0.1);
+          }
+          EOF
+          
+          # Run k6 test
+          k6 run performance-test.js
+
+  # Security Scanning
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          trivyignores: '.trivyignore'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/python@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      - name: OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'BOL-CD'
+          path: '.'
+          format: 'HTML'
+          args: >
+            --enableRetired
+            --enableExperimental
+
+      - name: Upload OWASP results
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-dependency-check
+          path: reports/
+
+  # Notification
+  notify:
+    name: Send Notification
+    runs-on: ubuntu-latest
+    needs: [deploy, performance-test, security-scan]
+    if: always()
+    steps:
+      - name: Send Slack notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            Deployment to ${{ github.event.inputs.environment || 'staging' }} completed
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            Status: ${{ job.status }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        if: always()

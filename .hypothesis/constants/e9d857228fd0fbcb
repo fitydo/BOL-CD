@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/api/scim_routes.py
+# hypothesis_version: 6.137.3
+
+[100, 201, 204, 400, 404, 409, 1000, '/Groups', '/Groups/{group_id}', '/ResourceTypes', '/Schemas', '/Users', '/Users/{user_id}', '/scim/v2', 'Group', 'HTTP Basic', 'Invalid group data', 'Invalid user data', 'OAuth Bearer Token', 'Operations', 'Resources', 'SCIM', 'User', 'User Account', 'active', 'admin', 'bulk', 'changePassword', 'description', 'detail', 'displayName', 'emails', 'endpoint', 'etag', 'filter', 'httpbasic', 'id', 'maxOperations', 'maxResults', 'name', 'oauthbearertoken', 'op', 'patch', 'path', 'replace', 'schema', 'schemas', 'sort', 'status', 'supported', 'totalResults', 'type', 'value']

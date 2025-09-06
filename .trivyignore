@@ -1,0 +1,8 @@
+# Ignore demo SAML key in repo scan (expected for local IdP demos)
+# Secret scanner pattern path
+certs/sp.key:AsymmetricPrivateKey
+
+# Optionally ignore OS-level CVEs with no fixes in base image (uncomment if needed)
+#CVE-2023-45853
+#CVE-2025-6965
+#CVE-2025-7458

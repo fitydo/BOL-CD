@@ -1,0 +1,152 @@
+# SAML Configuration for BOL-CD
+# This file contains IdP-specific settings for SAML SSO
+
+# Service Provider (SP) Settings
+sp:
+  entity_id: "https://bolcd.example.com"
+  assertion_consumer_service:
+    url: "https://bolcd.example.com/api/v1/auth/saml/acs"
+    binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+  single_logout_service:
+    url: "https://bolcd.example.com/api/v1/auth/saml/sls"
+    binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+  x509cert_file: "./certs/sp.crt"
+  private_key_file: "./certs/sp.key"
+  
+# Identity Provider (IdP) Settings
+# Configure one or more IdPs below
+
+idps:
+  # Okta Configuration
+  okta:
+    enabled: false
+    entity_id: "http://www.okta.com/${org_id}"
+    sso_service:
+      url: "https://${your_okta_domain}/app/${app_id}/sso/saml"
+      binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+    slo_service:
+      url: "https://${your_okta_domain}/app/${app_id}/slo/saml"
+      binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+    x509cert: |
+      -----BEGIN CERTIFICATE-----
+      # Paste your Okta IdP certificate here
+      -----END CERTIFICATE-----
+    attributes:
+      email: "email"
+      name: "displayName"
+      groups: "groups"
+      
+  # Azure AD Configuration
+  azure:
+    enabled: false
+    entity_id: "https://sts.windows.net/${tenant_id}/"
+    sso_service:
+      url: "https://login.microsoftonline.com/${tenant_id}/saml2"
+      binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+    slo_service:
+      url: "https://login.microsoftonline.com/${tenant_id}/saml2"
+      binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+    x509cert: |
+      -----BEGIN CERTIFICATE-----
+      # Paste your Azure AD certificate here
+      -----END CERTIFICATE-----
+    attributes:
+      email: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
+      name: "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"
+      groups: "http://schemas.microsoft.com/ws/2008/06/identity/claims/groups"
+      
+  # Google Workspace Configuration
+  google:
+    enabled: false
+    entity_id: "google.com"
+    sso_service:
+      url: "https://accounts.google.com/o/saml2/idp?idpid=${idp_id}"
+      binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+    x509cert: |
+      -----BEGIN CERTIFICATE-----
+      # Paste your Google Workspace certificate here
+      -----END CERTIFICATE-----
+    attributes:
+      email: "email"
+      name: "name"
+      
+  # Generic SAML IdP Configuration
+  generic:
+    enabled: false
+    entity_id: "https://idp.example.com"
+    sso_service:
+      url: "https://idp.example.com/sso/saml"
+      binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+    slo_service:
+      url: "https://idp.example.com/slo/saml"
+      binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+    x509cert: |
+      -----BEGIN CERTIFICATE-----
+      # Paste your IdP certificate here
+      -----END CERTIFICATE-----
+    attributes:
+      email: "email"
+      name: "displayName"
+      groups: "memberOf"
+
+# SAML Security Settings
+security:
+  name_id_encrypted: false
+  authn_requests_signed: true
+  logout_request_signed: true
+  logout_response_signed: true
+  want_assertions_signed: true
+  want_assertions_encrypted: false
+  want_name_id: true
+  want_name_id_encrypted: false
+  want_attribute_statement: true
+  signature_algorithm: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
+  digest_algorithm: "http://www.w3.org/2001/04/xmlenc#sha256"
+  
+# Session Settings
+session:
+  lifetime: 28800  # 8 hours in seconds
+  idle_timeout: 3600  # 1 hour in seconds
+  
+# Attribute Mapping
+attribute_mapping:
+  # Map SAML attributes to internal user properties
+  email:
+    - "email"
+    - "mail"
+    - "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
+  display_name:
+    - "displayName"
+    - "name"
+    - "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"
+  first_name:
+    - "givenName"
+    - "firstName"
+    - "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname"
+  last_name:
+    - "sn"
+    - "surname"
+    - "lastName"
+    - "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname"
+  groups:
+    - "groups"
+    - "memberOf"
+    - "http://schemas.microsoft.com/ws/2008/06/identity/claims/groups"
+    
+# Role Mapping
+role_mapping:
+  # Map IdP groups to BOL-CD roles
+  admin:
+    - "BOL-CD-Admins"
+    - "SecurityAdmins"
+    - "CN=Admins,OU=Groups,DC=example,DC=com"
+  analyst:
+    - "BOL-CD-Analysts"
+    - "SecurityAnalysts"
+    - "SOC-Team"
+  user:
+    - "BOL-CD-Users"
+    - "Domain Users"
+    
+# Default role if no mapping matches
+default_role: "user"

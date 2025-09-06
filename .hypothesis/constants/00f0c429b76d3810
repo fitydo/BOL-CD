@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/auth/models.py
+# hypothesis_version: 6.137.3
+
+[100, 255, 3600, 'bearer', 'local', 'user', 'users']

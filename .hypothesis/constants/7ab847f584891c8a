@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/auth/saml.py
+# hypothesis_version: 6.137.3
+
+['/app/bolcd/saml/sso', '/saml2/default', 'BOLCD_BASE_URL', 'BOLCD_OKTA_DOMAIN', 'BOLCD_SAML_IDP_CERT', 'BOLCD_SAML_IDP_TYPE', 'BOLCD_SAML_SP_CERT', 'BOLCD_SAML_SP_KEY', 'NameIDFormat', 'attributes', 'authnRequestsSigned', 'azure', 'binding', 'digestAlgorithm', 'displayName', 'email', 'entityId', 'error', 'errors', 'generic', 'google', 'http://', 'http_host', 'https', 'https://', 'idp', 'last_error_reason', 'localhost:8080', 'logoutRequestSigned', 'logoutResponseSigned', 'nameIdEncrypted', 'okta', 'on', 'privateKey', 'saml_request', 'script_name', 'security', 'session_index', 'signMetadata', 'signatureAlgorithm', 'singleLogoutService', 'singleSignOnService', 'slo_url', 'sp', 'sso_url', 'success', 'tokens', 'url', 'user', 'wantAssertionsSigned', 'wantMessagesSigned', 'wantNameId', 'wantNameIdEncrypted', 'x509cert']

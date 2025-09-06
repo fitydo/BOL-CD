@@ -1,0 +1,4 @@
+# file: /home/yoshi/workspace/BOL-CD/src/bolcd/condense/policy.py
+# hypothesis_version: 6.137.3
+
+[0.0, 0.1, 0.3, 0.5, 0.7, 1.0, ',', '0.01', '0.3', '1.5', '20', '3600', 'BOLCD_POLICY_ALPHA', 'BOLCD_POLICY_VERSION', 'BOLCD_ROOT_PASS', 'allowlist', 'backdoor', 'command_injection', 'critical', 'critical_signature', 'data_exfiltration', 'high', 'in_deg', 'info', 'lift', 'low', 'malware_detected', 'medium', 'privilege_escalation', 'q_value', 'ransomware', 'rootkit', 'safe-1.0.0', 'sql_injection', 'support', 'true', 'unauthorized_access']

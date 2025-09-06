@@ -91,3 +91,4 @@ def update_from_reports(reports_dir: str = "/reports"):
         except Exception:
             # never fail metrics endpoint due to parsing errors
             return
+

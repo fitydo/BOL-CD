@@ -1,0 +1,37 @@
+# Exclude VCS files
+.git
+.gitignore
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+
+# Node and web build artifacts
+web/node_modules/
+web/dist/
+
+# Local data, logs, reports
+logs/
+*.log
+reports/
+*.db
+*.sqlite
+
+# Secrets and certificates (mounted at runtime)
+certs/
+*.pem
+*.key
+*.crt
+
+# Test and coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.hypothesis/
+
+# Docker build leftovers
+Dockerfile.*~
