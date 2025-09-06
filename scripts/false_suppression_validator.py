@@ -420,7 +420,9 @@ class FalseSuppressionValidator:
 
 def main():
     """メイン実行関数"""
-    import argparse, tempfile, os
+    import argparse
+    import tempfile
+    import os
     
     parser = argparse.ArgumentParser(description="誤抑制の検証")
     parser.add_argument('--suppressed', help='抑制されたイベントファイル')
