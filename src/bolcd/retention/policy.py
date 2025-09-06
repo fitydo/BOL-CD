@@ -179,7 +179,7 @@ class RetentionManager:
     def apply_retention_policies(self, dry_run: bool = False) -> Dict[str, Any]:
         """Apply retention policies to delete old data"""
         results = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(datetime.UTC).isoformat(),
             "dry_run": dry_run,
             "deleted": {},
             "archived": {},
@@ -194,7 +194,7 @@ class RetentionManager:
                 continue
             
             try:
-                cutoff_date = datetime.utcnow() - timedelta(days=policy.retention_period.value)
+                cutoff_date = datetime.now(datetime.UTC) - timedelta(days=policy.retention_period.value)
                 
                 # Process based on data type
                 if data_type == DataType.ALERTS:

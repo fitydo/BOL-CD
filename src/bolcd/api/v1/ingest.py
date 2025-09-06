@@ -3,7 +3,7 @@ Ingest API for Demo and Testing
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field
 import hashlib
@@ -236,7 +236,7 @@ async def get_sample_data():
     """
     Get sample alert data for testing
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     
     samples = [
         {

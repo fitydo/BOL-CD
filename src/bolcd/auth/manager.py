@@ -2,7 +2,7 @@
 
 import os
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 
 import bcrypt
@@ -62,14 +62,14 @@ class AuthManager:
     def create_access_token(self, data: Dict[str, Any]) -> str:
         """Create a JWT access token."""
         to_encode = data.copy()
-        expire = datetime.utcnow() + timedelta(minutes=self.access_token_expire_minutes)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
         to_encode.update({"exp": expire, "type": "access"})
         return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
     
     def create_refresh_token(self, data: Dict[str, Any]) -> str:
         """Create a JWT refresh token."""
         to_encode = data.copy()
-        expire = datetime.utcnow() + timedelta(days=self.refresh_token_expire_days)
+        expire = datetime.now(timezone.utc) + timedelta(days=self.refresh_token_expire_days)
         to_encode.update({"exp": expire, "type": "refresh"})
         return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
     
@@ -134,7 +134,7 @@ class AuthManager:
             return None
         
         # Update last login
-        user.last_login = datetime.utcnow()
+        user.last_login = datetime.now(timezone.utc)
         db.commit()
         
         return User.from_orm(user)
@@ -166,7 +166,7 @@ class AuthManager:
             
             if user:
                 # Update existing user
-                user.last_login = datetime.utcnow()
+                user.last_login = datetime.now(timezone.utc)
                 if not user.avatar_url and picture:
                     user.avatar_url = picture
                 if not user.full_name and name:
@@ -240,7 +240,7 @@ class AuthManager:
             if hasattr(user, key) and value is not None:
                 setattr(user, key, value)
         
-        user.updated_at = datetime.utcnow()
+        user.updated_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(user)
         return User.from_orm(user)
@@ -255,7 +255,7 @@ class AuthManager:
             return False
         
         user.hashed_password = self.hash_password(new_password)
-        user.updated_at = datetime.utcnow()
+        user.updated_at = datetime.now(timezone.utc)
         db.commit()
         return True
     
@@ -276,7 +276,7 @@ class AuthManager:
             existing.full_name = full_name or existing.full_name
             existing.auth_provider = provider
             existing.provider_id = provider_id
-            existing.last_login = datetime.utcnow()
+            existing.last_login = datetime.now(timezone.utc)
             db.commit()
             db.refresh(existing)
             return User.from_orm(existing)
@@ -296,7 +296,7 @@ class AuthManager:
             provider_id=provider_id,
             is_active=True,
             is_verified=True,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
         db.add(db_user)
         db.commit()

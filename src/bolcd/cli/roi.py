@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List
 
@@ -41,7 +41,7 @@ def main(argv: List[str] | None = None) -> int:
     )
     
     # Generate report
-    end_date = datetime.utcnow()
+    end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=args.period)
     
     print(f"Generating ROI report for {args.period} days...")
@@ -55,7 +55,7 @@ def main(argv: List[str] | None = None) -> int:
     
     # Output results
     if args.format in ["json", "both"]:
-        output_file = args.output_path / f"roi_report_{datetime.utcnow().strftime('%Y%m%d')}.json"
+        output_file = args.output_path / f"roi_report_{datetime.now(timezone.utc).strftime('%Y%m%d')}.json"
         output_file.parent.mkdir(parents=True, exist_ok=True)
         with open(output_file, "w") as f:
             json.dump(report, f, indent=2, default=str)

@@ -264,7 +264,7 @@ class SLAMonitor:
         sla_error_rate_gauge.set(error_rate)
         
         return SLAMetrics(
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(datetime.UTC).isoformat(),
             uptime_percentage=uptime_percentage,
             availability_percentage=availability_percentage,
             response_time_p50=p50,
@@ -305,8 +305,8 @@ class SLAMonitor:
         report = {
             "period": {
                 "days": period_days,
-                "start": (datetime.utcnow() - timedelta(days=period_days)).isoformat(),
-                "end": datetime.utcnow().isoformat()
+                "start": (datetime.now(datetime.UTC) - timedelta(days=period_days)).isoformat(),
+                "end": datetime.now(datetime.UTC).isoformat()
             },
             "current_metrics": asdict(current_metrics),
             "targets": {name: asdict(target) for name, target in self.targets.items()},
@@ -325,7 +325,7 @@ class SLAMonitor:
     def _load_historical_data(self, period_days: int) -> List[Dict]:
         """Load historical SLA data"""
         historical = []
-        cutoff_date = datetime.utcnow() - timedelta(days=period_days)
+        cutoff_date = datetime.now(datetime.UTC) - timedelta(days=period_days)
         
         # Load from stored metrics files
         metrics_path = self.data_path / "metrics"
@@ -394,7 +394,7 @@ class SLAMonitor:
     
     def _save_report(self, report: Dict[str, Any]):
         """Save SLA report to file"""
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(datetime.UTC).strftime("%Y%m%d_%H%M%S")
         report_file = self.data_path / f"sla_report_{timestamp}.json"
         
         with open(report_file, "w") as f:

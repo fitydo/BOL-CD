@@ -2,7 +2,7 @@
 Late Replay Reconciliation Job
 Identifies suppressed alerts that should be delivered late
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 import os
@@ -51,7 +51,7 @@ def should_late_replay(sup: Suppressed, db: Session) -> tuple[bool, str, float]:
     """
     
     # Check 1: TTL Policy - old suppressions should be reviewed
-    age_seconds = (datetime.utcnow() - sup.inserted_ts).total_seconds()
+    age_seconds = (datetime.now(timezone.utc) - sup.inserted_ts).total_seconds()
     if age_seconds >= TTL_SEC:
         return True, "ttl_policy", 0.7
     
@@ -115,7 +115,7 @@ def run_once():
             
             if not should_replay:
                 # Check if it should expire instead
-                age_seconds = (datetime.utcnow() - sup.inserted_ts).total_seconds()
+                age_seconds = (datetime.now(timezone.utc) - sup.inserted_ts).total_seconds()
                 if age_seconds > TTL_SEC * 2:  # Double TTL = expire
                     sup.status = "expired"
                     logger.debug(f"Expired suppressed alert {sup.alert_id}")
@@ -157,7 +157,7 @@ def run_once():
         logger.info(f"Reconciliation complete. Added {late_count} alerts to late replay")
         
         # Clean up old expired entries (optional)
-        expired_cutoff = datetime.utcnow() - timedelta(days=7)
+        expired_cutoff = datetime.now(timezone.utc) - timedelta(days=7)
         expired_count = db.query(Suppressed).filter(
             and_(
                 Suppressed.status == "expired",

@@ -1,7 +1,7 @@
 """
 Decision Engine with Integrated False Suppression Validation
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 from sqlalchemy.orm import Session
 
@@ -104,7 +104,7 @@ def _validate_false_suppression(
     recent_high = db.query(Alert).filter(
         Alert.entity_id == alert.entity_id,
         Alert.severity.in_(["high", "critical"]),
-        Alert.ts >= datetime.utcnow() - timedelta(hours=1),
+        Alert.ts >= datetime.now(timezone.utc) - timedelta(hours=1),
         Alert.id != alert.id
     ).count()
     
@@ -115,7 +115,7 @@ def _validate_false_suppression(
     same_pattern_count = db.query(Alert).filter(
         Alert.entity_id == alert.entity_id,
         Alert.rule_id == alert.rule_id,
-        Alert.ts >= datetime.utcnow() - timedelta(days=7)
+        Alert.ts >= datetime.now(timezone.utc) - timedelta(days=7)
     ).count()
     
     rarity_score = 1.0 / (same_pattern_count + 1)  # Rarer = higher score

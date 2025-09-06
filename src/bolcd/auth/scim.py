@@ -95,8 +95,8 @@ class SCIMManager:
                 displayName=group_data["displayName"],
                 meta={
                     "resourceType": "Group",
-                    "created": datetime.utcnow().isoformat(),
-                    "lastModified": datetime.utcnow().isoformat(),
+                    "created": datetime.now(datetime.UTC).isoformat(),
+                    "lastModified": datetime.now(datetime.UTC).isoformat(),
                     "location": f"/scim/v2/Groups/{group_data['id']}"
                 }
             )
@@ -112,8 +112,8 @@ class SCIMManager:
             active=user.is_active,
             meta={
                 "resourceType": "User",
-                "created": user.created_at.isoformat() if user.created_at else datetime.utcnow().isoformat(),
-                "lastModified": user.updated_at.isoformat() if user.updated_at else datetime.utcnow().isoformat(),
+                "created": user.created_at.isoformat() if user.created_at else datetime.now(datetime.UTC).isoformat(),
+                "lastModified": user.updated_at.isoformat() if user.updated_at else datetime.now(datetime.UTC).isoformat(),
                 "location": f"/scim/v2/Users/{user.id}"
             }
         )
@@ -165,7 +165,7 @@ class SCIMManager:
             is_active=scim_user.active,
             is_verified=True,  # SCIM users are pre-verified
             role=role,
-            created_at=datetime.utcnow()
+            created_at=datetime.now(datetime.UTC)
         )
         
         db.add(db_user)
@@ -218,7 +218,7 @@ class SCIMManager:
                         user_db.role = group.get("value")
                         break
             
-            user_db.updated_at = datetime.utcnow()
+            user_db.updated_at = datetime.now(datetime.UTC)
             db.commit()
             db.refresh(user_db)
             
@@ -240,7 +240,7 @@ class SCIMManager:
             
             # Soft delete - just deactivate
             user_db.is_active = False
-            user_db.updated_at = datetime.utcnow()
+            user_db.updated_at = datetime.now(datetime.UTC)
             db.commit()
             return True
             
@@ -279,8 +279,8 @@ class SCIMManager:
         scim_group.id = str(uuid.uuid4())
         scim_group.meta = {
             "resourceType": "Group",
-            "created": datetime.utcnow().isoformat(),
-            "lastModified": datetime.utcnow().isoformat(),
+            "created": datetime.now(datetime.UTC).isoformat(),
+            "lastModified": datetime.now(datetime.UTC).isoformat(),
             "location": f"/scim/v2/Groups/{scim_group.id}"
         }
         self.groups[scim_group.id] = scim_group
@@ -298,7 +298,7 @@ class SCIMManager:
         existing = self.groups[group_id]
         existing.displayName = scim_group.displayName
         existing.members = scim_group.members
-        existing.meta["lastModified"] = datetime.utcnow().isoformat()
+        existing.meta["lastModified"] = datetime.now(datetime.UTC).isoformat()
         
         return existing
     
