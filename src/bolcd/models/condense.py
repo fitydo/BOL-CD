@@ -1,7 +1,7 @@
 """
 Condensed Alert Data Models with False Suppression Tracking
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy import Column, String, Integer, DateTime, Boolean, JSON, ForeignKey, UniqueConstraint, Float, Text
 
@@ -34,7 +34,7 @@ class DecisionRecord(Base):
     decision = Column(String, index=True, nullable=False)  # deliver|suppress
     confidence = Column(Float, nullable=True)  # 決定の信頼度
     reason = Column(JSON, nullable=False)  # {edge:{A,B}, q_value, support, window_sec, policy_version, validation_score, ...}
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
     
     # Relationships
     alert = relationship("Alert", back_populates="decision")
@@ -46,7 +46,7 @@ class Suppressed(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     alert_id = Column(String, ForeignKey("alerts.id"), index=True, nullable=False, unique=True)
     edge_id = Column(String, index=True, nullable=True)      # A->B の識別子
-    inserted_ts = Column(DateTime, default=datetime.utcnow, index=True)
+    inserted_ts = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
     status = Column(String, index=True, nullable=False, default="pending")  # pending|late|expired|validated
     
     # 誤抑制検証スコア
@@ -66,7 +66,7 @@ class LateReplay(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     alert_id = Column(String, ForeignKey("alerts.id"), index=True, nullable=False, unique=True)
     original_ts = Column(DateTime, index=True, nullable=False)
-    late_ts = Column(DateTime, default=datetime.utcnow, index=True)
+    late_ts = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
     reason = Column(String, nullable=False)  # edge_drift|override|severity|ttl_policy|false_suppression
     confidence = Column(Float, nullable=True)  # 遅配判定の信頼度
     delivered = Column(Boolean, default=False)
@@ -80,7 +80,7 @@ class ValidationLog(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     alert_id = Column(String, ForeignKey("alerts.id"), index=True, nullable=False)
-    validation_ts = Column(DateTime, default=datetime.utcnow, index=True)
+    validation_ts = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
     method = Column(String, nullable=False)  # severity|correlation|statistical|shadow|manual
     score = Column(Float, nullable=False)  # 0.0 (safe) to 1.0 (likely false suppression)
     confidence = Column(Float, nullable=False)  # 0.0 to 1.0
