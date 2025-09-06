@@ -420,14 +420,41 @@ class FalseSuppressionValidator:
 
 def main():
     """メイン実行関数"""
-    import argparse
+    import argparse, tempfile, os
     
     parser = argparse.ArgumentParser(description="誤抑制の検証")
-    parser.add_argument('--suppressed', required=True, help='抑制されたイベントファイル')
-    parser.add_argument('--passed', required=True, help='通過したイベントファイル')
+    parser.add_argument('--suppressed', help='抑制されたイベントファイル')
+    parser.add_argument('--passed', help='通過したイベントファイル')
     parser.add_argument('--original', help='元のイベントファイル（オプション）')
     parser.add_argument('--output', default='reports/false_suppression_validation.json', help='出力レポート')
+    parser.add_argument('--test-mode', action='store_true', help='テストモード（サンプルデータで実行）')
     args = parser.parse_args()
+    
+    if args.test_mode:
+        # 事前引数なしで自己診断を実行
+        now = datetime.now().isoformat()
+        suppressed = [
+            {"timestamp": now, "entity_id": "host-1", "severity": "high", "rule_id": "R1", "_raw": "failed login admin"},
+            {"timestamp": now, "entity_id": "host-2", "severity": "low", "rule_id": "R2", "_raw": "noise"},
+        ]
+        passed = [
+            {"timestamp": now, "entity_id": "host-1", "severity": "critical", "rule_id": "R3", "_raw": "privilege escalation"}
+        ]
+        with tempfile.TemporaryDirectory() as td:
+            sup_path = os.path.join(td, 'suppressed.jsonl')
+            pas_path = os.path.join(td, 'passed.jsonl')
+            with open(sup_path, 'w') as f:
+                for e in suppressed:
+                    f.write(json.dumps(e) + '\n')
+            with open(pas_path, 'w') as f:
+                for e in passed:
+                    f.write(json.dumps(e) + '\n')
+            validator = FalseSuppressionValidator(sup_path, pas_path, None)
+            validator.export_validation_report(args.output)
+        return
+    
+    if not (args.suppressed and args.passed):
+        parser.error('the following arguments are required: --suppressed, --passed')
     
     validator = FalseSuppressionValidator(args.suppressed, args.passed, args.original)
     validator.export_validation_report(args.output)
