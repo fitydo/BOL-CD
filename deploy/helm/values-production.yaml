@@ -1,6 +1,9 @@
 # Production environment specific values
 replicaCount: 3
 
+image:
+  tag: "6d4cbdc6"
+
 ingress:
   hosts:
     - host: bolcd.production.example.com
